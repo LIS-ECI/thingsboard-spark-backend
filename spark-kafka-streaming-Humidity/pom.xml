@@ -30,7 +30,7 @@
 
 
     <groupId>org.thingsboard.samples</groupId>
-    <artifactId>spark-kafka-streaming-integration</artifactId>
+    <artifactId>spark-kafka-streaming-humidity</artifactId>
     <packaging>jar</packaging>
 
     <name>Spark Humidity Avg</name>
@@ -45,11 +45,6 @@
 
 
     <dependencies>
-        <!-- ThingsBoard Dependencies-->
-        <dependency>
-            <groupId>org.thingsboard.common</groupId>
-            <artifactId>data</artifactId>
-        </dependency>
         <!-- Spark, Spark Streaming and Kafka Dependencies -->
         <dependency>
             <groupId>org.apache.spark</groupId>

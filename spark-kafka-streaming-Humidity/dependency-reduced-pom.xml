@@ -8,8 +8,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.thingsboard.samples</groupId>
-  <artifactId>spark-kafka-streaming-integration</artifactId>
-  <name>Spark Temperature Avg</name>
+  <artifactId>spark-kafka-streaming-humidity</artifactId>
+  <name>Spark Humidity Avg</name>
   <url>http://thingsboard.io</url>
   <build>
     <plugins>
