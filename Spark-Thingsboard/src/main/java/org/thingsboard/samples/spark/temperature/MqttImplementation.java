@@ -38,9 +38,11 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONObject;
 import org.thingsboard.samples.spark.util.JedisUtil;
 import org.thingsboard.server.common.data.parcel.Parcel;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 
 /**
@@ -49,160 +51,280 @@ import redis.clients.jedis.Transaction;
  */
 @Slf4j
 public class MqttImplementation {
-    
+
     private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
     private static final String TOPIC_TO_THINGSBOARD = "TemperatureAvg";
-
-    private  MqttAsyncClient client;
-    private  MongoDBSpatial mdbs;
-
-
+    private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
+    private static final int TIME_SECONDS = 60000;
+    private static final double PERCENTAGE = 80;
+    private MqttAsyncClient client;
+    private MongoDBSpatial mdbs;
 
     MqttImplementation() throws MqttException {
         mdbs = new MongoDBSpatial();
-        }
-    
+    }
+
     public void connectToThingsboard(String token) throws Exception {
         client = new MqttAsyncClient(THINGSBOARD_MQTT_ENDPOINT, MqttAsyncClient.generateClientId());
         MqttConnectOptions options = new MqttConnectOptions();
-            options.setUserName(token);
-            try {
-                client.connect(options, null, new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken iMqttToken) {
-                        log.info("Connected to Thingsboard!");
-                    }
-
-                    @Override
-                    public void onFailure(IMqttToken iMqttToken, Throwable e) {
-                        log.error("Failed to connect to Thingsboard!", e);
-                    }
-                }).waitForCompletion();
-            } catch (MqttException e) {
-                log.error("Failed to connect to the server", e);
-            }
-            
-        }
-
-        
-        public void publishTelemetryToThingsboard(List<TemperatureAndGeoZoneData> aggData,String Topic) throws Exception {
-            if (!aggData.isEmpty()) {
-                HashMap<String, List<MutablePair>> hmap = new HashMap<>();
-                for (TemperatureAndGeoZoneData agg: aggData){
-                    String idParcel=mdbs.findParcelsByDeviceId(agg.getDeviceId()).getId();
-                    
-                    //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
-                    //CassandraConnector connector = new CassandraConnector();
-                    //connector.connect("10.8.0.18", null);
-                    //Session session = connector.getSession();
-                    //KeyspaceRepository sr = new KeyspaceRepository(session);
-                    //sr.useKeyspace("thingsboard");
-                    //ParcelRepository pr= new ParcelRepository(session);
-                    //Parcel p= pr.selectById(idParcel);  
-                    //System.out.println("Nombre Cultivo: "+p.getCrop().getName());
-                    
-                    if (hmap.containsKey(idParcel)){
-                         List<MutablePair> temp= hmap.get(idParcel);
-                         temp.add(new MutablePair(agg.getTemperature(),agg.getCount()) );
-                         hmap.put(idParcel, temp);
-                    }
-                    else{
-                        List<MutablePair> temp= new ArrayList<>();
-                        temp.add(new MutablePair(agg.getTemperature(),agg.getCount()));
-                        hmap.put(idParcel, temp);
-                    }
-                }
-                //Sacar promedio respecto al cultivo
-                HashMap<String, Double> hmap_promedios = new HashMap<>();
-                hmap.keySet().forEach((idParcel) -> {
-                    List<MutablePair> list= hmap.get(idParcel);
-                   
-                    Double total=0.0;
-                    for (int i=0;i<list.size();i++){
-                        Double cont=Double.parseDouble(list.get(i).right.toString());
-                        total+=cont;
-                    }
-
-                    Double avg=0.0;
-                    for (int i=0;i<list.size();i++){
-                        Double cont=Double.parseDouble(list.get(i).right.toString());
-                        Double value=Double.parseDouble(list.get(i).left.toString());
-                        avg+=(cont/total)*value;
-                    }
-
-                    hmap_promedios.put(idParcel, avg);
-                });
-                //Enviar datos al device de spark 
-                hmap_promedios.keySet().forEach((idParcel) -> {
-                    try {
-                        //Sacar token del device de Spark del cultivo
-                        String token=getTokenSpark(idParcel,Topic);
-                        toDataJson(token,hmap_promedios.get(idParcel),idParcel,Topic);
-                    } catch (MqttException ex) {
-                        Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IOException ex) {
-                        Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                });
-                
-            }
-        }
-        
-        private String getTokenSpark(String idParcel,String Topic){
-        String token=null;
+        options.setUserName(token);
         try {
-            token= mdbs.getTokenByIdParcelTopic(idParcel, Topic);
+            client.connect(options, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken iMqttToken) {
+                    log.info("Connected to Thingsboard!");
+                }
+
+                @Override
+                public void onFailure(IMqttToken iMqttToken, Throwable e) {
+                    log.error("Failed to connect to Thingsboard!", e);
+                }
+            }).waitForCompletion();
+        } catch (MqttException e) {
+            log.error("Failed to connect to the server", e);
+        }
+
+    }
+
+    public void publishTelemetryToThingsboard(List<TemperatureAndGeoZoneData> aggData, String Topic) throws Exception {
+        if (!aggData.isEmpty()) {
+            HashMap<String, List<MutablePair>> hmap = new HashMap<>();
+            for (TemperatureAndGeoZoneData agg : aggData) {
+                String idParcel = mdbs.findParcelsByDeviceId(agg.getDeviceId()).getId();
+
+                if (hmap.containsKey(idParcel)) {
+                    List<MutablePair> temp = hmap.get(idParcel);
+                    temp.add(new MutablePair(agg.getTemperature(), agg.getCount()));
+                    hmap.put(idParcel, temp);
+                } else {
+                    List<MutablePair> temp = new ArrayList<>();
+                    temp.add(new MutablePair(agg.getTemperature(), agg.getCount()));
+                    hmap.put(idParcel, temp);
+                }
+            }
+            //Sacar promedio respecto al cultivo
+            HashMap<String, Double> hmap_promedios = new HashMap<>();
+            hmap.keySet().forEach((idParcel) -> {
+                List<MutablePair> list = hmap.get(idParcel);
+
+                Double total = 0.0;
+                for (int i = 0; i < list.size(); i++) {
+                    Double cont = Double.parseDouble(list.get(i).right.toString());
+                    total += cont;
+                }
+
+                Double avg = 0.0;
+                for (int i = 0; i < list.size(); i++) {
+                    Double cont = Double.parseDouble(list.get(i).right.toString());
+                    Double value = Double.parseDouble(list.get(i).left.toString());
+                    avg += (cont / total) * value;
+                }
+
+                hmap_promedios.put(idParcel, avg);
+            });
+            //Enviar datos al device de spark 
+            hmap_promedios.keySet().forEach((idParcel) -> {
+                try {
+                    //Sacar token del device de Spark del cultivo
+                    String token = getTokenSpark(idParcel, Topic);
+                    toDataJson(token, hmap_promedios.get(idParcel), idParcel, Topic);
+                } catch (MqttException ex) {
+                    Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            });
+
+        }
+    }
+
+    private String getTokenSpark(String idParcel, String Topic) {
+        String token = null;
+        try {
+            token = mdbs.getTokenByIdParcelTopic(idParcel, Topic);
         } catch (MongoDBException ex) {
             Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return token;   
-        }
-        
-        private void publicTo(String jsonB,String token, String idParcel,String topic) throws MqttException, IOException, Exception{
-            connectToThingsboard(token);
-            MqttMessage dataMsg = new MqttMessage(jsonB.getBytes(StandardCharsets.UTF_8));
-            client.publish("v1/devices/me/telemetry", dataMsg, null, getCallback());                 
-            client.disconnect();
-            Jedis jedis = JedisUtil.getPool().getResource();   
-            jedis.watch (topic+idParcel);
+        return token;
+    }
+
+    private String getParcelNameCassandra(String idParcel) {
+        CassandraConnector connector = new CassandraConnector();
+        connector.connect("10.8.0.18", null);
+        Session session = connector.getSession();
+        KeyspaceRepository sr = new KeyspaceRepository(session);
+        sr.useKeyspace("thingsboard");
+        ParcelRepository pr = new ParcelRepository(session);
+        Parcel p = pr.selectById(idParcel);
+        return p.getCrop().getName();
+    }
+
+    private String getValueOfRedis(String key, String idParcel) {
+        boolean funciono = true;
+        String content = "";
+        while (funciono) {
+            Jedis jedis = JedisUtil.getPool().getResource();
+            jedis.watch(key + idParcel);
             Transaction t = jedis.multi();
-            t.set(topic+idParcel, jsonB);
-            t.exec();
-            jedis.close();        
+            Response<String> valor = t.get(key + idParcel);
+
+            List<Object> res = t.exec();
+            if (res.size() > 0) {
+                funciono = false;
+                content = valor.get();
+                jedis.close();
+            }
+        }
+        return content;
+    }
+
+    private void saveToRedis(String key, String idParcel, String data) {
+        Jedis jedis = JedisUtil.getPool().getResource();
+        jedis.watch(key + idParcel);
+        Transaction t2 = jedis.multi();
+        t2.set(key + idParcel, data);
+        t2.exec();
+        jedis.close();
+    }
+
+    private void sendAlert(String idParcel) {
+        System.out.println("ENVIOOO ALERTA");
+        String token = getTokenSpark(idParcel, "spark_detection");
+        System.out.println("token: "+token);
+        try {
+            connectToThingsboard(token);
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode dataUrg = mapper.createObjectNode();
+            ObjectNode values = dataUrg.put("pest_risk", 1);
+            MqttMessage dataMsg2 = new MqttMessage(mapper.writeValueAsString(dataUrg).getBytes(StandardCharsets.UTF_8));
+            client.publish("v1/devices/me/telemetry", dataMsg2, null, getCallback());
+            client.disconnect();
+        } catch (Exception ex) {
+            Logger.getLogger(org.thingsboard.samples.spark.precipitation.MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        private IMqttActionListener getCallback() {
-            return new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    log.info("Telemetry data updated!");
-                }
+    }
 
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    log.error("Telemetry data update failed!", exception);
+    private void review_data(String idParcel, String json) {
+
+        JSONObject temperature = new JSONObject(json);
+        Double temperatureData = Double.parseDouble(temperature.get(TOPIC_TO_THINGSBOARD).toString());
+        Double humidityData = Double.parseDouble(getValueOfRedis("humidity", idParcel));
+
+        //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
+        String parcel_name = getParcelNameCassandra(idParcel);
+
+        System.out.println("Nombre Cultivo: " + parcel_name);
+        String dataString = getValueOfRedis("data", idParcel);
+        String Parcelvalue = getValueOfRedis("value", idParcel);
+
+        if (parcel_name.equals("Papa") && humidityData > 75 && temperatureData > 10) {
+
+            //La primera vez que entra             
+            if (dataString == null) {
+                dataString = "+";
+                Parcelvalue = "1";
+            } //Cuando se cumple el tiempo estimado
+            else if (dataString.length() == (TIME_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
+                dataString += "+";
+                int addValue = 1;
+                String temp = dataString.substring(0, 1);
+                if (temp.equals("+")) {
+                    addValue = 0;
                 }
-            };
+                dataString = dataString.substring(1);
+
+                double Time_Seconds = (double) TIME_SECONDS;
+                double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
+                int parcel_value = Integer.parseInt(Parcelvalue)+1;
+                //Si cumple la condición completa es decir con tiempos
+                System.out.println("AVG: "+(parcel_value * 100)/(Time_Seconds / Stream_Window) );
+                System.out.println("AVG 2:"+Time_Seconds / Stream_Window);
+                if ((parcel_value * 100)/(Time_Seconds / Stream_Window) >= PERCENTAGE) {
+                    sendAlert(idParcel);
+                    System.out.println("dataString"+dataString);
+
+                }
+                Parcelvalue = String.valueOf(Integer.parseInt(Parcelvalue) + addValue);
+
+
+            } //Cuando aún no se cumple el tiempo
+            else {
+                dataString += "+";
+                Parcelvalue = String.valueOf(Integer.parseInt(Parcelvalue) + 1);
+            }
+
+        } else {
+            //Si no cumple la condición
+            if (dataString != null) {
+                if (dataString.length() == (TIME_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
+                    dataString += "-";
+                    int addValue = 0;
+                    String temp = dataString.substring(0, 1);
+                    if (temp.equals("+")) {
+                        addValue = -1;
+                    }
+                    dataString = dataString.substring(1);
+                    double Time_Seconds = (double) TIME_SECONDS;
+                    double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
+                    int parcel_value = Integer.parseInt(Parcelvalue);
+                    //Si cumple la condición completa es decir con tiempos
+                    System.out.println("AVG: "+(parcel_value * (Time_Seconds / Stream_Window)) / 100 );
+                    if ((parcel_value * (Time_Seconds / Stream_Window)) / 100 >= PERCENTAGE) {
+                        System.out.println("dataString"+dataString);
+                        sendAlert(idParcel);
+                    }
+                    Parcelvalue = String.valueOf(Integer.parseInt(Parcelvalue) + addValue);
+
+                } else {
+                    dataString += "-";
+                }
+            }
+
         }
+        if (dataString != null) {
+            saveToRedis("data", idParcel, dataString);
+            //Guardar valores en redis
+            saveToRedis("value", idParcel, Parcelvalue);
+        }
+    }
 
-       
+    private void publicTo(String jsonB, String token, String idParcel, String topic) throws MqttException, IOException, Exception {
+        connectToThingsboard(token);
+        MqttMessage dataMsg = new MqttMessage(jsonB.getBytes(StandardCharsets.UTF_8));
+        client.publish("v1/devices/me/telemetry", dataMsg, null, getCallback());
+        client.disconnect();
+        review_data(idParcel, jsonB);
+    }
 
-    
-    private void toDataJson(String token, Double temperature, String idParcel,String topic) throws JsonProcessingException, MqttException, IOException {
+    private IMqttActionListener getCallback() {
+        return new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken asyncActionToken) {
+                log.info("Telemetry data updated!");
+            }
+
+            @Override
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                log.error("Telemetry data update failed!", exception);
+            }
+        };
+    }
+
+    private void toDataJson(String token, Double temperature, String idParcel, String topic) throws JsonProcessingException, MqttException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jsonB = mapper.createObjectNode();
-        ObjectNode values = jsonB.put(TOPIC_TO_THINGSBOARD,temperature );
-        if (jsonB.size()>0){
+        ObjectNode values = jsonB.put(TOPIC_TO_THINGSBOARD, temperature);
+        if (jsonB.size() > 0) {
             try {
-                publicTo(mapper.writeValueAsString(jsonB),token,idParcel,topic);
+                publicTo(mapper.writeValueAsString(jsonB), token, idParcel, topic);
             } catch (Exception ex) {
                 Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-            
+
     }
-   
-    
+
     private static String toConnectJson(String geoZone) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode json = mapper.createObjectNode();

@@ -38,6 +38,7 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONObject;
 import org.thingsboard.samples.spark.util.JedisUtil;
 import org.thingsboard.server.common.data.parcel.Parcel;
 import redis.clients.jedis.Jedis;
@@ -158,17 +159,23 @@ public class MqttImplementation {
         return token;   
         }
         
+        private void saveToRedis(String key,String idParcel,String data){
+            Jedis jedis = JedisUtil.getPool().getResource();
+            jedis.watch (key+idParcel);
+            Transaction t2 = jedis.multi();
+            t2.set(key+idParcel, data);
+            t2.exec();
+            jedis.close();
+        }
+        
         private void publicTo(String jsonB,String token, String idParcel,String topic) throws MqttException, IOException, Exception{
             connectToThingsboard(token);
             MqttMessage dataMsg = new MqttMessage(jsonB.getBytes(StandardCharsets.UTF_8));
             client.publish("v1/devices/me/telemetry", dataMsg, null, getCallback());                 
             client.disconnect();
-            Jedis jedis = JedisUtil.getPool().getResource();   
-            jedis.watch (topic+idParcel);
-            Transaction t = jedis.multi();
-            t.set(topic+idParcel, jsonB);
-            t.exec();
-            jedis.close();        
+            JSONObject humidity = new JSONObject(jsonB);
+            String new_msg= humidity.get(TOPIC_TO_THINGSBOARD).toString(); 
+            saveToRedis(topic,idParcel,new_msg);
         }
 
         private IMqttActionListener getCallback() {
