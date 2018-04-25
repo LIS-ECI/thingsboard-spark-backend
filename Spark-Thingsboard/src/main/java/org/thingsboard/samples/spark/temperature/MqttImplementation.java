@@ -200,8 +200,13 @@ public class MqttImplementation {
         data.put("humidityData",String.valueOf(humidityData));
         data.put("temperatureData", String.valueOf(temperatureData));
         data.put("idParcel", idParcel);
-
-        rulesEngine.execute(data);
+        
+        if (parcel_name.equals("Papa")){
+            System.out.println("parcel name: "+parcel_name);
+            rulesEngine.execute(data);
+        }
+        
+    
     }
 
     private void publicTo(String jsonB, String token, String idParcel, String topic) throws MqttException, IOException, Exception {
