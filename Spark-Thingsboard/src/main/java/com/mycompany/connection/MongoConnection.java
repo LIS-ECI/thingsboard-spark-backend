@@ -9,7 +9,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mycompany.mongodb.ServerProperties;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.Document;
@@ -28,15 +27,10 @@ public abstract class MongoConnection {
     private MongoClient mongoClient;
     private MongoDatabase mongoDatabase;
 
-    @Autowired
-    private ServerProperties serverProperties;
-
     public MongoConnection() {
     }
 
-    public ServerProperties getServerProperties() {
-        return serverProperties;
-    }
+
 
     public MongoClient getSession() {
         if (mongoClient == null) {

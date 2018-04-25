@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
 import com.mycompany.entities.SparkDevice;
+import edu.eci.pgr.spark.RulesEngine;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,8 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.thingsboard.samples.spark.util.JedisUtil;
 import org.thingsboard.server.common.data.parcel.Parcel;
 import redis.clients.jedis.Jedis;
@@ -54,14 +57,14 @@ public class MqttImplementation {
 
     private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
     private static final String TOPIC_TO_THINGSBOARD = "TemperatureAvg";
-    private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
-    private static final int TIME_SECONDS = 60000;
-    private static final double PERCENTAGE = 80;
     private MqttAsyncClient client;
     private MongoDBSpatial mdbs;
-
+    private RulesEngine rulesEngine;
+    
     MqttImplementation() throws MqttException {
         mdbs = new MongoDBSpatial();
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        rulesEngine = ac.getBean(RulesEngine.class);
     }
 
     public void connectToThingsboard(String token) throws Exception {
@@ -178,33 +181,6 @@ public class MqttImplementation {
         return content;
     }
 
-    private void saveToRedis(String key, String idParcel, String data) {
-        Jedis jedis = JedisUtil.getPool().getResource();
-        jedis.watch(key + idParcel);
-        Transaction t2 = jedis.multi();
-        t2.set(key + idParcel, data);
-        t2.exec();
-        jedis.close();
-    }
-
-    private void sendAlert(String idParcel) {
-        System.out.println("ENVIOOO ALERTA");
-        String token = getTokenSpark(idParcel, "spark_detection");
-        System.out.println("token: "+token);
-        try {
-            connectToThingsboard(token);
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode dataUrg = mapper.createObjectNode();
-            ObjectNode values = dataUrg.put("pest_risk", 1);
-            MqttMessage dataMsg2 = new MqttMessage(mapper.writeValueAsString(dataUrg).getBytes(StandardCharsets.UTF_8));
-            client.publish("v1/devices/me/telemetry", dataMsg2, null, getCallback());
-            client.disconnect();
-        } catch (Exception ex) {
-            Logger.getLogger(org.thingsboard.samples.spark.precipitation.MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-    }
-
     private void review_data(String idParcel, String json) {
 
         JSONObject temperature = new JSONObject(json);
@@ -218,75 +194,14 @@ public class MqttImplementation {
         String dataString = getValueOfRedis("data", idParcel);
         String Parcelvalue = getValueOfRedis("value", idParcel);
 
-        if (parcel_name.equals("Papa") && humidityData > 75 && temperatureData > 10) {
+        
+        HashMap<String,String> data= new HashMap<>();
+        data.put("ParcelName", parcel_name);
+        data.put("humidityData",String.valueOf(humidityData));
+        data.put("temperatureData", String.valueOf(temperatureData));
+        data.put("idParcel", idParcel);
 
-            //La primera vez que entra             
-            if (dataString == null) {
-                dataString = "+";
-                Parcelvalue = "1";
-            } //Cuando se cumple el tiempo estimado
-            else if (dataString.length() == (TIME_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                dataString += "+";
-                int addValue = 1;
-                String temp = dataString.substring(0, 1);
-                if (temp.equals("+")) {
-                    addValue = 0;
-                }
-                dataString = dataString.substring(1);
-
-                double Time_Seconds = (double) TIME_SECONDS;
-                double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
-                int parcel_value = Integer.parseInt(Parcelvalue)+1;
-                //Si cumple la condición completa es decir con tiempos
-                System.out.println("AVG: "+(parcel_value * 100)/(Time_Seconds / Stream_Window) );
-                System.out.println("AVG 2:"+Time_Seconds / Stream_Window);
-                if ((parcel_value * 100)/(Time_Seconds / Stream_Window) >= PERCENTAGE) {
-                    sendAlert(idParcel);
-                    System.out.println("dataString"+dataString);
-
-                }
-                Parcelvalue = String.valueOf(Integer.parseInt(Parcelvalue) + addValue);
-
-
-            } //Cuando aún no se cumple el tiempo
-            else {
-                dataString += "+";
-                Parcelvalue = String.valueOf(Integer.parseInt(Parcelvalue) + 1);
-            }
-
-        } else {
-            //Si no cumple la condición
-            if (dataString != null) {
-                if (dataString.length() == (TIME_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                    dataString += "-";
-                    int addValue = 0;
-                    String temp = dataString.substring(0, 1);
-                    if (temp.equals("+")) {
-                        addValue = -1;
-                    }
-                    dataString = dataString.substring(1);
-                    double Time_Seconds = (double) TIME_SECONDS;
-                    double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
-                    int parcel_value = Integer.parseInt(Parcelvalue);
-                    //Si cumple la condición completa es decir con tiempos
-                    System.out.println("AVG: "+(parcel_value * (Time_Seconds / Stream_Window)) / 100 );
-                    if ((parcel_value * (Time_Seconds / Stream_Window)) / 100 >= PERCENTAGE) {
-                        System.out.println("dataString"+dataString);
-                        sendAlert(idParcel);
-                    }
-                    Parcelvalue = String.valueOf(Integer.parseInt(Parcelvalue) + addValue);
-
-                } else {
-                    dataString += "-";
-                }
-            }
-
-        }
-        if (dataString != null) {
-            saveToRedis("data", idParcel, dataString);
-            //Guardar valores en redis
-            saveToRedis("value", idParcel, Parcelvalue);
-        }
+        rulesEngine.execute(data);
     }
 
     private void publicTo(String jsonB, String token, String idParcel, String topic) throws MqttException, IOException, Exception {
