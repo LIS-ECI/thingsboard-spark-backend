@@ -185,7 +185,13 @@ public class MqttImplementation {
 
         JSONObject temperature = new JSONObject(json);
         Double temperatureData = Double.parseDouble(temperature.get(TOPIC_TO_THINGSBOARD).toString());
-        Double humidityData = Double.parseDouble(getValueOfRedis("humidity", idParcel));
+        String temphumi=getValueOfRedis("humidity", idParcel);
+        Double humidityData=0.0;
+        if (temphumi==null){
+        }
+        else{
+           humidityData = Double.parseDouble(getValueOfRedis("humidity", idParcel));
+        }
 
         //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
         String parcel_name = getParcelNameCassandra(idParcel);
