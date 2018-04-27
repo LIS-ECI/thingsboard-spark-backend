@@ -28,13 +28,13 @@ import org.thingsboard.samples.spark.temperature.MqttImplementation;
  * @author cristian
  */
 @Slf4j
-public class ActionSendAlert implements Action{
+public class ActionSendAlert implements Action {
 
     private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
     private MqttAsyncClient client;
     private MongoDBSpatial mdbs = new MongoDBSpatial();
     private String idParcel;
-    
+
     public void connectToThingsboard(String token) throws Exception {
         client = new MqttAsyncClient(THINGSBOARD_MQTT_ENDPOINT, MqttAsyncClient.generateClientId());
         MqttConnectOptions options = new MqttConnectOptions();
@@ -56,7 +56,7 @@ public class ActionSendAlert implements Action{
         }
 
     }
-    
+
     private String getTokenSpark(String idParcel, String Topic) {
         String token = null;
         try {
@@ -66,32 +66,26 @@ public class ActionSendAlert implements Action{
         }
         return token;
     }
-    
+
     @Override
     public void execute() {
         MongoDBSpatial mdbs = new MongoDBSpatial();
-        try {        
-            SpatialParcel parcel=mdbs.findParcelsByDeviceId(getIdParcel());
-            
-            List<List<Double>> datos= parcel.getPolygons().getCoordinates();
-            System.out.println(String.format("|%20s|%20s|", "Longitude", "Latitude"));
-            for(List<Double> containData : datos){
-                double longitude = containData.get(0);
-                double latitude = containData.get(1);
-                System.out.println(String.format("|%20s|%20s|",Double.toString(longitude),Double.toString(latitude)));
-            }
-            
-            
-            System.out.println("Sending to neighbor crops ...");
-            
-            
-        } catch (MongoDBException ex) {
-            Logger.getLogger(ActionSendAlert.class.getName()).log(Level.SEVERE, null, ex);
+
+        SpatialParcel parcel = mdbs.getMongodbparcel().findById(getIdParcel());
+
+        List<List<Double>> datos = parcel.getPolygons().getCoordinates();
+        System.out.println(String.format("|%20s|%20s|", "Longitude", "Latitude"));
+        for (List<Double> containData : datos) {
+            double longitude = containData.get(0);
+            double latitude = containData.get(1);
+            System.out.println(String.format("|%20s|%20s|", Double.toString(longitude), Double.toString(latitude)));
         }
-        
+
+        System.out.println("Sending to neighbor crops ...");
+
         System.out.println("ALERT: RISK OF Phytophthora infestans in crop with Id: getIdParcel()");
         String token = getTokenSpark(getIdParcel(), "spark_detection");
-        
+
         try {
             connectToThingsboard(token);
             ObjectMapper mapper = new ObjectMapper();
@@ -104,11 +98,9 @@ public class ActionSendAlert implements Action{
             Logger.getLogger(org.thingsboard.samples.spark.precipitation.MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        
-        
     }
 
-  private IMqttActionListener getCallback() {
+    private IMqttActionListener getCallback() {
         return new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
@@ -121,8 +113,7 @@ public class ActionSendAlert implements Action{
             }
         };
     }
-    
-    
+
     /**
      * @return the idParcel
      */
@@ -138,6 +129,5 @@ public class ActionSendAlert implements Action{
     public void setIdParcel(String idParcel) {
         this.idParcel = idParcel;
     }
-    
-    
+
 }
