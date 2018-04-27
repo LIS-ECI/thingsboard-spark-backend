@@ -7,6 +7,7 @@ package edu.eci.pgr.spark;
 
 import com.mycompany.connection.MongoDBSpatial;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.HashMap;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -26,10 +27,11 @@ import redis.clients.jedis.Transaction;
 public class GotaRule implements Rule {
 
     private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
-    private static final int TIME_HUMIDITY_SECONDS = 20000;
-    private static final int TIME_TEMPERATURE_SECONDS = 40000;
+    private static final int TIME_ANALYSIS_MILISECONDS = 20000; //15 seconds 
+    private static final int TIME_DAY_MILISECONDS = 60000; //30 seconds
+    private static final int TIME_DAY_MILISECONDS_ERROR = 1000; //1 seconds
 
-    private static final double PERCENTAGE = 100;
+    private static final double PERCENTAGE = 80;
     private List<Action> actions;
 
     public GotaRule() {
@@ -58,127 +60,166 @@ public class GotaRule implements Rule {
         return content;
     }
 
-    public void humidityAnalysis(String idParcel, String humidityData ){
-        String humidityString = getValueOfRedis("Hdata", idParcel);
-        String humidityValue = getValueOfRedis("Hvalue", idParcel);
-        //Mirar datos de la humedad
-        if (Double.parseDouble(humidityData) >= 90) {
-
-            //La primera vez
-            if (humidityString == null) {
-                humidityString = "+";
-                humidityValue = "1";
-            } //Si pasó el tiempo para la humedad
-            else if (humidityString.length() == (TIME_HUMIDITY_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                humidityString += "+";
-                int addValue = 1;
-                String temp = humidityString.substring(0, 1);
-                if (temp.equals("+")) {
-                    addValue = 0;
-                }
-                humidityString = humidityString.substring(1);
-
-                double Time_Seconds = (double) TIME_HUMIDITY_SECONDS;
-                double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
-                int humidityvalue = Integer.parseInt(humidityValue) + 1;
-                //Si cumple la condición completa es decir con tiempos
-                System.out.println("AVG: " + (humidityvalue * 100) / (Time_Seconds / Stream_Window));
-                System.out.println("AVG 2:" + Time_Seconds / Stream_Window);
-                if ((humidityvalue * 100) / (Time_Seconds / Stream_Window) >= PERCENTAGE) {
-                    saveToRedis("humidityWarning", idParcel, "+");
-                }
-                humidityValue = String.valueOf(Integer.parseInt(humidityValue) + addValue);
-            } //Mientras no haya pasado el tiempo
-            else {
-                humidityString += "+";
-                humidityValue = String.valueOf(Integer.parseInt(humidityValue) + 1);
-            }
-        } else {
-            //Si no cumple la condición (humedad)
-            if (humidityString != null) {
-                if (humidityString.length() == (TIME_HUMIDITY_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                    humidityString += "-";
-                    int addValue = 0;
-                    String temp = humidityString.substring(0, 1);
-                    if (temp.equals("+")) {
-                        addValue = -1;
-                    }
-                    humidityString = humidityString.substring(1);
-                    double Time_Seconds = (double) TIME_HUMIDITY_SECONDS;
-                    double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
-                    int humidity_value = Integer.parseInt(humidityValue);
-                    //Si cumple la condición completa es decir con tiempos
-                    System.out.println("AVG: " + (humidity_value * (Time_Seconds / Stream_Window)) / 100);
-                    if ((humidity_value * (Time_Seconds / Stream_Window)) / 100 >= PERCENTAGE) {
-                        saveToRedis("humidityWarning", idParcel, "+");
-                    }
-                    humidityValue = String.valueOf(Integer.parseInt(humidityValue) + addValue);
-                }
-                else {
-                    humidityString += "-";
-                }
-            }
-            
-        }
-        if (humidityString != null) {
-                saveToRedis("Hdata", idParcel, humidityString);
-                //Guardar valores en redis
-                saveToRedis("Hvalue", idParcel, humidityValue);
-            }
-
-    
-    }
-    
-    public void temperatureAnalysis(String idParcel,String temperatureData){
-    String temperatureTime = getValueOfRedis("temperatureTime", idParcel);
-        if (Double.parseDouble(temperatureData) >= 10) {
-            System.out.println("temperatureTime");
-            if (temperatureTime == null) {
-                //inicializar el temperatureTime  
-                temperatureTime = "1";
-                
-            } 
-            //Si se cumplió el tiempo
-            else if (Double.parseDouble(temperatureTime) == (TIME_TEMPERATURE_SECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                //Si existe al menos 1 vez que durante 7 horas la humedad fue +
-                String humidityWarning = getValueOfRedis("humidityWarning", idParcel);
-
-                if (humidityWarning != null && humidityWarning.equals("+")) {
-                    saveToRedis("humidityWarning", idParcel, "-");
-                    for (Action ac : actions) {
-                        ac.setIdParcel(idParcel);
-                        ac.execute();
-                    }
-                    temperatureTime = "0";
-                } //Se cumplio el tiempo pero no hay humedad alta se reinicia 
-                else {
-                    temperatureTime = String.valueOf(TIME_HUMIDITY_SECONDS / STREAM_WINDOW_MILLISECONDS);
-                }
-
-            } //Si aun no se cumple el tiempo
-            else {
-                temperatureTime = String.valueOf(Double.parseDouble(temperatureTime) + 1);
-            }
-
-        } 
-        else {
-            temperatureTime = "0";
-            saveToRedis("Hdata", idParcel, "-");
-            saveToRedis("Hvalue", idParcel, "0");
-        }
-        saveToRedis("temperatureTime", idParcel, temperatureTime);
-    }
-    
-    
-    
     @Override
     public void execute(HashMap<String, String> data) {
         System.out.println("Entró execute");
         String idParcel = data.get("idParcel");
-        humidityAnalysis(idParcel,data.get("humidityData"));
-        temperatureAnalysis(idParcel,data.get("temperatureData"));
-        
-  
+
+        RuleAnalysis(idParcel, data.get("humidityData"), data.get("temperatureData"));
+
+    }
+
+    private void RuleAnalysis(String idParcel, String humidityData, String temperatureData) {
+        Date now = new Date();
+        long now_long = now.getTime();
+        String analysisString = getValueOfRedis("analysisString", idParcel);
+        String analysisValue = getValueOfRedis("analysisValue", idParcel);
+        String start_time = getValueOfRedis("start_time", idParcel);
+
+        //Mirar si cumple la condición
+        if (Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
+
+            //La primera vez
+            if (analysisString == null || start_time == null) {
+                analysisString = "+";
+                analysisValue = "1";
+                //Inicializar fecha
+
+                saveToRedis("start_time", idParcel, String.valueOf(now_long));
+
+            } //Si se cumplieron las 11 horas
+            else if (analysisString.length() == (TIME_ANALYSIS_MILISECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
+                analysisString += "+";
+                int addValue = 1;
+                String temp = analysisString.substring(0, 1);
+                if (temp.equals("+")) {
+                    addValue = 0;
+                }
+                analysisString = analysisString.substring(1);
+
+                long Time_Seconds = (long) TIME_ANALYSIS_MILISECONDS;
+                long Stream_Window = (long) STREAM_WINDOW_MILLISECONDS;
+                int analysisvalue = Integer.parseInt(analysisValue) + 1;
+                //Si cumple la condición completa es decir con tiempos
+                System.out.println("AVG: " + (analysisvalue * 100) / (Time_Seconds / Stream_Window));
+                System.out.println("AVG 2:" + Time_Seconds / Stream_Window);
+
+                //Si se genero el valor durante las 11 horas seguidas
+                if ((analysisvalue * 100) / (Time_Seconds / Stream_Window) >= PERCENTAGE) {
+
+                    //Si estoy en el dia 1 
+                    if (now_long - Double.parseDouble(start_time) < TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR) {
+                        String warning = getValueOfRedis("Warning", idParcel);
+                        //hay un warning?
+                        //si --> no hacer nada
+                        //no --> agregar
+                        if (warning == null || warning.equals("-")) {
+                            saveToRedis("Warning", idParcel, "+");
+                        }
+                    }
+
+                    if (now_long - Double.parseDouble(start_time) > TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR) {
+                        String warning = getValueOfRedis("Warning", idParcel);
+                        //Por ser dia 2 apenas se cumplan las horas es porque hay alarma
+                        System.out.println("ALARMAA");
+                        //ALARMA
+                        for (Action ac : actions) {
+                            ac.setIdParcel(idParcel);
+                            ac.execute();
+                        }
+                        saveToRedis("Warning", idParcel, "-");
+                        analysisString = "-";
+                        analysisValue = "0";
+                        now = new Date();
+                        now_long = now.getTime();
+                        saveToRedis("start_time", idParcel, String.valueOf(now_long));
+                    }
+
+                }
+                analysisValue = String.valueOf(Integer.parseInt(analysisValue) + addValue);
+            } //Mientras no haya pasado el tiempo
+            else {
+                analysisString += "+";
+                analysisValue = String.valueOf(Integer.parseInt(analysisValue) + 1);
+            }
+
+            //Si no cumple la condición (humedad)
+        } else {
+            //si ya existe al menos un registro
+            if (analysisString != null && start_time != null && !analysisString.equals("")) {
+                //Si se cumplen las 11 horas
+                if (analysisString.length() == (TIME_ANALYSIS_MILISECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
+                    analysisString += "-";
+                    int addValue = 0;
+                    String temp = analysisString.substring(0, 1);
+                    if (temp.equals("+")) {
+                        addValue = -1;
+                    }
+                    analysisString = analysisString.substring(1);
+                    double Time_Seconds = (double) TIME_ANALYSIS_MILISECONDS;
+                    double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
+                    int analysis_value = Integer.parseInt(analysisValue);
+                    //Si cumple la condición completa es decir con tiempos continuos
+                    System.out.println("AVG: " + (analysis_value * (Time_Seconds / Stream_Window)) / 100);
+                    if ((analysis_value * (Time_Seconds / Stream_Window)) / 100 >= PERCENTAGE) {
+                        //Si estoy en el dia 1 
+
+                        if (now_long - Double.parseDouble(start_time) < TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR) {
+                            String warning = getValueOfRedis("Warning", idParcel);
+                            //hay un warning?
+                            //si --> no hacer nada
+                            //no --> agregar
+                            if (warning == null || warning.equals("-")) {
+                                saveToRedis("Warning", idParcel, "+");
+                            }
+                        }
+
+                        if (now_long - Double.parseDouble(start_time) > TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR) {
+                            String warning = getValueOfRedis("Warning", idParcel);
+                            //Por ser dia 2 apenas se cumplan las horas es porque hay alarma antes
+
+                            //ALARMA
+                            System.out.println("ALARMAA");
+                            for (Action ac : actions) {
+                                ac.setIdParcel(idParcel);
+                                ac.execute();
+                            }
+                            saveToRedis("Warning", idParcel, "-");
+                            analysisString = "-";
+                            analysisValue = "0";
+                            now = new Date();
+                            now_long = now.getTime();
+                            saveToRedis("start_time", idParcel, String.valueOf(now_long));
+                        }
+                    }
+                    analysisValue = String.valueOf(Integer.parseInt(analysisValue) + addValue);
+                } else {
+                    analysisString += "-";
+                }
+            }
+
+        }
+        if (analysisString != null && analysisValue != null) {
+            saveToRedis("analysisString", idParcel, analysisString);
+            saveToRedis("analysisValue", idParcel, analysisValue);
+        }
+
+        if (start_time != null) {
+            System.out.println("TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR"+String.valueOf(TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR));
+            System.out.println("now_long - Double.parseDouble(start_time)"+String.valueOf(now_long - Double.parseDouble(start_time)));
+            System.out.println("OR");
+            System.out.println("TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR"+String.valueOf(TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR));
+            if ((TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR) < (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR)) {
+                //si no hubo alarma reiniciar
+                System.out.println("RENOVANDO DIA");
+                String warning = getValueOfRedis("Warning", idParcel);
+                if (warning == null || warning.equals("-")) {
+                    saveToRedis("analysisString", idParcel, "");
+                    saveToRedis("analysisValue", idParcel, "0");
+                }
+
+            }
+        }
 
     }
 

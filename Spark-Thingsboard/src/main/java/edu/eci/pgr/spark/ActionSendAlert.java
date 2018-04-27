@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
+import com.mycompany.entities.SpatialParcel;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
@@ -67,9 +69,29 @@ public class ActionSendAlert implements Action{
     
     @Override
     public void execute() {
-        System.out.println("ENVIOOO ALERTA");
+        MongoDBSpatial mdbs = new MongoDBSpatial();
+        try {        
+            SpatialParcel parcel=mdbs.findParcelsByDeviceId(getIdParcel());
+            
+            List<List<Double>> datos= parcel.getPolygons().getCoordinates();
+            System.out.println(String.format("|%20s|%20s|", "Longitude", "Latitude"));
+            for(List<Double> containData : datos){
+                double longitude = containData.get(0);
+                double latitude = containData.get(1);
+                System.out.println(String.format("|%20s|%20s|",Double.toString(longitude),Double.toString(latitude)));
+            }
+            
+            
+            System.out.println("Sending to neighbor crops ...");
+            
+            
+        } catch (MongoDBException ex) {
+            Logger.getLogger(ActionSendAlert.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        System.out.println("ALERT: RISK OF Phytophthora infestans in crop with Id: getIdParcel()");
         String token = getTokenSpark(getIdParcel(), "spark_detection");
-        System.out.println("token: "+token);
+        
         try {
             connectToThingsboard(token);
             ObjectMapper mapper = new ObjectMapper();
@@ -82,6 +104,8 @@ public class ActionSendAlert implements Action{
             Logger.getLogger(org.thingsboard.samples.spark.precipitation.MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+        
+        
     }
 
   private IMqttActionListener getCallback() {
