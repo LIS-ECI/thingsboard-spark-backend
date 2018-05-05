@@ -6,14 +6,24 @@
 package edu.eci.pgr.spark;
 
 import com.mycompany.connection.MongoDBSpatial;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+
 import org.thingsboard.samples.spark.util.JedisUtil;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Response;
@@ -27,10 +37,10 @@ import redis.clients.jedis.Transaction;
 public class GotaRule implements Rule {
 
     private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
-    private static final int TIME_ANALYSIS_MILISECONDS = 20000; //15 seconds 
-    private static final int TIME_DAY_MILISECONDS = 60000; //30 seconds
+    private static final int TIME_ANALYSIS_MILISECONDS = 25000; //25 seconds 
+    private static final int TIME_DAY_MILISECONDS = 60000; //60 seconds
     private static final int TIME_DAY_MILISECONDS_ERROR = 1000; //1 seconds
-
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
     private static final double PERCENTAGE = 80;
     private List<Action> actions;
 
@@ -62,34 +72,34 @@ public class GotaRule implements Rule {
 
     @Override
     public void execute(HashMap<String, String> data) {
-        System.out.println("Entró execute");
         String idParcel = data.get("idParcel");
-
         RuleAnalysis(idParcel, data.get("humidityData"), data.get("temperatureData"));
 
     }
 
     private void RuleAnalysis(String idParcel, String humidityData, String temperatureData) {
         Date now = new Date();
-        long now_long = now.getTime();
+        long now_long = now.getTime();     
         String analysisString = getValueOfRedis("analysisString", idParcel);
         String analysisValue = getValueOfRedis("analysisValue", idParcel);
         String start_time = getValueOfRedis("start_time", idParcel);
-
+        String condition="-"; 
+        int value=0;
         //Mirar si cumple la condición
         if (Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
-
+            condition="+";
+            value=1;
+        }
             //La primera vez
-            if (analysisString == null || start_time == null) {
-                analysisString = "+";
-                analysisValue = "1";
+        if (analysisString == null || start_time == null) {
+                analysisString = condition;
+                analysisValue = String.valueOf(value);
                 //Inicializar fecha
-
                 saveToRedis("start_time", idParcel, String.valueOf(now_long));
 
             } //Si se cumplieron las 11 horas
             else if (analysisString.length() == (TIME_ANALYSIS_MILISECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                analysisString += "+";
+                analysisString += condition;
                 int addValue = 1;
                 String temp = analysisString.substring(0, 1);
                 if (temp.equals("+")) {
@@ -101,9 +111,6 @@ public class GotaRule implements Rule {
                 long Stream_Window = (long) STREAM_WINDOW_MILLISECONDS;
                 int analysisvalue = Integer.parseInt(analysisValue) + 1;
                 //Si cumple la condición completa es decir con tiempos
-                System.out.println("AVG: " + (analysisvalue * 100) / (Time_Seconds / Stream_Window));
-                System.out.println("AVG 2:" + Time_Seconds / Stream_Window);
-
                 //Si se genero el valor durante las 11 horas seguidas
                 if ((analysisvalue * 100) / (Time_Seconds / Stream_Window) >= PERCENTAGE) {
 
@@ -118,17 +125,16 @@ public class GotaRule implements Rule {
                         }
                     }
 
-                    if (now_long - Double.parseDouble(start_time) > TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR) {
+                    if (now_long - Double.parseDouble(start_time) > TIME_DAY_MILISECONDS + STREAM_WINDOW_MILLISECONDS*2 ) {
                         String warning = getValueOfRedis("Warning", idParcel);
                         //Por ser dia 2 apenas se cumplan las horas es porque hay alarma
-                        System.out.println("ALARMAA");
                         //ALARMA
                         for (Action ac : actions) {
                             ac.setIdParcel(idParcel);
                             ac.execute();
                         }
                         saveToRedis("Warning", idParcel, "-");
-                        analysisString = "-";
+                        analysisString = "";
                         analysisValue = "0";
                         now = new Date();
                         now_long = now.getTime();
@@ -139,89 +145,53 @@ public class GotaRule implements Rule {
                 analysisValue = String.valueOf(Integer.parseInt(analysisValue) + addValue);
             } //Mientras no haya pasado el tiempo
             else {
-                analysisString += "+";
-                analysisValue = String.valueOf(Integer.parseInt(analysisValue) + 1);
+                analysisString += condition;
+                analysisValue = String.valueOf(Integer.parseInt(analysisValue) + value);
             }
 
             //Si no cumple la condición (humedad)
-        } else {
-            //si ya existe al menos un registro
-            if (analysisString != null && start_time != null && !analysisString.equals("")) {
-                //Si se cumplen las 11 horas
-                if (analysisString.length() == (TIME_ANALYSIS_MILISECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
-                    analysisString += "-";
-                    int addValue = 0;
-                    String temp = analysisString.substring(0, 1);
-                    if (temp.equals("+")) {
-                        addValue = -1;
-                    }
-                    analysisString = analysisString.substring(1);
-                    double Time_Seconds = (double) TIME_ANALYSIS_MILISECONDS;
-                    double Stream_Window = (double) STREAM_WINDOW_MILLISECONDS;
-                    int analysis_value = Integer.parseInt(analysisValue);
-                    //Si cumple la condición completa es decir con tiempos continuos
-                    System.out.println("AVG: " + (analysis_value * (Time_Seconds / Stream_Window)) / 100);
-                    if ((analysis_value * (Time_Seconds / Stream_Window)) / 100 >= PERCENTAGE) {
-                        //Si estoy en el dia 1 
 
-                        if (now_long - Double.parseDouble(start_time) < TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR) {
-                            String warning = getValueOfRedis("Warning", idParcel);
-                            //hay un warning?
-                            //si --> no hacer nada
-                            //no --> agregar
-                            if (warning == null || warning.equals("-")) {
-                                saveToRedis("Warning", idParcel, "+");
-                            }
-                        }
+        saveToRedis("analysisString", idParcel, analysisString);
+        saveToRedis("analysisValue", idParcel, analysisValue);
+        String warning = getValueOfRedis("Warning", idParcel);
 
-                        if (now_long - Double.parseDouble(start_time) > TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR) {
-                            String warning = getValueOfRedis("Warning", idParcel);
-                            //Por ser dia 2 apenas se cumplan las horas es porque hay alarma antes
-
-                            //ALARMA
-                            System.out.println("ALARMAA");
-                            for (Action ac : actions) {
-                                ac.setIdParcel(idParcel);
-                                ac.execute();
-                            }
-                            saveToRedis("Warning", idParcel, "-");
-                            analysisString = "-";
-                            analysisValue = "0";
-                            now = new Date();
-                            now_long = now.getTime();
-                            saveToRedis("start_time", idParcel, String.valueOf(now_long));
-                        }
-                    }
-                    analysisValue = String.valueOf(Integer.parseInt(analysisValue) + addValue);
-                } else {
-                    analysisString += "-";
-                }
+        //SI es el primer dia
+        boolean day1=(TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR)< (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR);
+        boolean day2=(TIME_DAY_MILISECONDS*2 - TIME_DAY_MILISECONDS_ERROR)< (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS*2 + TIME_DAY_MILISECONDS_ERROR);
+        if (day1){
+            if (warning == null || warning.equals("-")) {
+            //si no hubo alarma reiniciar
+            saveToRedis("start_time", idParcel, String.valueOf(now_long));
             }
-
+            saveToRedis("analysisString", idParcel, "");
+            saveToRedis("analysisValue", idParcel, "0");
+        } 
+        if (day2){
+            saveToRedis("Warning", idParcel, "-");
+            saveToRedis("start_time", idParcel, String.valueOf(now_long));
+            saveToRedis("analysisString", idParcel, "");
+            saveToRedis("analysisValue", idParcel, "0");
         }
-        if (analysisString != null && analysisValue != null) {
-            saveToRedis("analysisString", idParcel, analysisString);
-            saveToRedis("analysisValue", idParcel, analysisValue);
+        Timestamp timestamp1=new Timestamp(now_long);
+         
+                 
+        File file = new File("DatosPGR1.csv");
+      
+        FileWriter writer; 
+        try {
+            writer = new FileWriter(file,true);
+            Date now2 = new Date();
+            long now_long2 = now2.getTime();  
+            Timestamp timestamp2=new Timestamp(now_long2);
+            writer.write(sdf.format(timestamp1)+","+sdf.format(timestamp2)+'\n');
+            writer.flush();
+            writer.close();
+        } catch (IOException ex) {
+            Logger.getLogger(GotaRule.class.getName()).log(Level.SEVERE, null, ex);
         }
+            
+   }
 
-        if (start_time != null) {
-            System.out.println("TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR"+String.valueOf(TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR));
-            System.out.println("now_long - Double.parseDouble(start_time)"+String.valueOf(now_long - Double.parseDouble(start_time)));
-            System.out.println("OR");
-            System.out.println("TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR"+String.valueOf(TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR));
-            if ((TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR) < (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR)) {
-                //si no hubo alarma reiniciar
-                System.out.println("RENOVANDO DIA");
-                String warning = getValueOfRedis("Warning", idParcel);
-                if (warning == null || warning.equals("-")) {
-                    saveToRedis("analysisString", idParcel, "");
-                    saveToRedis("analysisValue", idParcel, "0");
-                }
-
-            }
-        }
-
-    }
 
     private void saveToRedis(String key, String idParcel, String data) {
         Jedis jedis = JedisUtil.getPool().getResource();

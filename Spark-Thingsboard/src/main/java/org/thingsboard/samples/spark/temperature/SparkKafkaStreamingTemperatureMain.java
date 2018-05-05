@@ -42,7 +42,7 @@ public class SparkKafkaStreamingTemperatureMain {
     // Kafka brokers URL for Spark Streaming to connect and fetched messages from.
     private static final String KAFKA_BROKER_LIST = "10.8.0.18:9092";
     // Time interval in milliseconds of Spark Streaming Job, 10 seconds by default.
-    private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
+    private static final int STREAM_WINDOW_MILLISECONDS = 3000; // 5 seconds
     // Kafka telemetry topic to subscribe to. This should match to the topic in the rule action.
     private static final String Topic="temperature";
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
