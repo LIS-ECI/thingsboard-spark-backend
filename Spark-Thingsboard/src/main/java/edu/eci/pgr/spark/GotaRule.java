@@ -114,6 +114,7 @@ public class GotaRule implements Rule {
                 analysisValue = String.valueOf(value);
                 //Inicializar fecha
                 saveToRedis("start_time", idParcel, String.valueOf(now_long));
+                start_time=String.valueOf(now);
 
             } //Si se cumplieron las 11 horas
             else if (analysisString.length() == (TIME_ANALYSIS_MILISECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
