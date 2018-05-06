@@ -5,6 +5,10 @@
  */
 package edu.eci.pgr.spark;
 
+import com.baeldung.cassandra.java.client.CassandraConnector;
+import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
+import com.baeldung.cassandra.java.client.repository.ParcelRepository;
+import com.datastax.driver.core.Session;
 import com.mycompany.connection.MongoDBSpatial;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,6 +29,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 
 import org.thingsboard.samples.spark.util.JedisUtil;
+import org.thingsboard.server.common.data.parcel.Parcel;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
@@ -40,7 +45,7 @@ public class GotaRule implements Rule {
     private static final int TIME_ANALYSIS_MILISECONDS = 25000; //25 seconds 
     private static final int TIME_DAY_MILISECONDS = 60000; //60 seconds
     private static final int TIME_DAY_MILISECONDS_ERROR = 1000; //1 seconds
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS");
     private static final double PERCENTAGE = 80;
     private List<Action> actions;
 
@@ -70,14 +75,26 @@ public class GotaRule implements Rule {
         return content;
     }
 
+    
+    private String getParcelNameCassandra(String idParcel) {
+        CassandraConnector connector = new CassandraConnector();
+        connector.connect("10.8.0.18", null);
+        Session session = connector.getSession();
+        KeyspaceRepository sr = new KeyspaceRepository(session);
+        sr.useKeyspace("thingsboard");
+        ParcelRepository pr = new ParcelRepository(session);
+        Parcel p = pr.selectById(idParcel);
+        return p.getCrop().getName();
+    }
+    
     @Override
     public void execute(HashMap<String, String> data) {
         String idParcel = data.get("idParcel");
-        RuleAnalysis(idParcel, data.get("humidityData"), data.get("temperatureData"));
-
+        RuleAnalysis(idParcel, data.get("humidityData"), data.get("temperatureData"),data.get("first_time"));
     }
 
-    private void RuleAnalysis(String idParcel, String humidityData, String temperatureData) {
+    private void RuleAnalysis(String idParcel, String humidityData, String temperatureData,String first_time) {
+        
         Date now = new Date();
         long now_long = now.getTime();     
         String analysisString = getValueOfRedis("analysisString", idParcel);
@@ -85,8 +102,9 @@ public class GotaRule implements Rule {
         String start_time = getValueOfRedis("start_time", idParcel);
         String condition="-"; 
         int value=0;
+        String parcel_name = getParcelNameCassandra(idParcel);
         //Mirar si cumple la condición
-        if (Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
+        if (parcel_name.equals("Papa") && Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
             condition="+";
             value=1;
         }
@@ -172,8 +190,6 @@ public class GotaRule implements Rule {
             saveToRedis("analysisString", idParcel, "");
             saveToRedis("analysisValue", idParcel, "0");
         }
-        Timestamp timestamp1=new Timestamp(now_long);
-         
                  
         File file = new File("DatosPGR1.csv");
       
@@ -181,9 +197,7 @@ public class GotaRule implements Rule {
         try {
             writer = new FileWriter(file,true);
             Date now2 = new Date();
-            long now_long2 = now2.getTime();  
-            Timestamp timestamp2=new Timestamp(now_long2);
-            writer.write(sdf.format(timestamp1)+","+sdf.format(timestamp2)+'\n');
+            writer.write(first_time+","+sdf.format(now2)+'\n');
             writer.flush();
             writer.close();
         } catch (IOException ex) {

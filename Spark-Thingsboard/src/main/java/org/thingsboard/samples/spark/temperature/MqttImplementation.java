@@ -23,8 +23,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -187,28 +189,29 @@ public class MqttImplementation {
         Double temperatureData = Double.parseDouble(temperature.get(TOPIC_TO_THINGSBOARD).toString());
         String temphumi=getValueOfRedis("humidity", idParcel);
         Double humidityData=0.0;
-        if (temphumi==null){
-        }
-        else{
+        if (temphumi!=null){
            humidityData = Double.parseDouble(getValueOfRedis("humidity", idParcel));
         }
 
-        //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
-        String parcel_name = getParcelNameCassandra(idParcel);
+        
 
-        System.out.println("Nombre Cultivo: " + parcel_name);
         String dataString = getValueOfRedis("data", idParcel);
         String Parcelvalue = getValueOfRedis("value", idParcel);
 
         
         HashMap<String,String> data= new HashMap<>();
-        data.put("ParcelName", parcel_name);
         data.put("humidityData",String.valueOf(humidityData));
         data.put("temperatureData", String.valueOf(temperatureData));
         data.put("idParcel", idParcel);
         
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS");
+        Date now = new Date();
+        data.put("first_time",  sdf.format(now));
+
+        //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
+        String parcel_name = getParcelNameCassandra(idParcel);
+        
         if (parcel_name.equals("Papa")){
-            System.out.println("parcel name: "+parcel_name);
             rulesEngine.execute(data);
         }
         
