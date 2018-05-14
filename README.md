@@ -1,10 +1,10 @@
 ## Thingsboard Spark Backend
 
-The objective of this implementation of Spark, is to build a model that allows to analyze the data sent by the devices to Thingsboard in real time, to perform a set of actions depending on the case, for this can be extended within it a set of rules to analyze and actions to execute.
+The objective of this implementation of Spark, is to build a model that allows to analyze the data sent by the devices to Thingsboard in real time, and perform a set of actions depending on the case, for this can be extended within it a set of rules to analyze and actions to execute.
 
 This project has 3 nodes each dedicated to a specific topic, temperature, humidity and precipitation, whose function is to average the incoming data of the sensors of each type by crop, after averaging them using the mongo's api to know which one device inside the tool thingsboard send by Mqtt the averaged data. In addition, the temperature node is configured to read the information from the humidity node from Redis and, with this, execute a rule that detects the "late blight" in order to send another data that generates a pest risk alarm in Thingsboard.
 
-**Instructions:**
+**Local Mode Instrcutions:**
 
 the next instructions were made for being executed in a local way, it makes more easy the development and deployment in a test enviroment, if you want a cluster mode instructions, that gonna be depending of the implementation of the cluster.
 
