@@ -192,9 +192,7 @@ public class MqttImplementation {
         if (temphumi!=null){
            humidityData = Double.parseDouble(getValueOfRedis("humidity", idParcel));
         }
-
         
-
         String dataString = getValueOfRedis("data", idParcel);
         String Parcelvalue = getValueOfRedis("value", idParcel);
 
@@ -214,8 +212,6 @@ public class MqttImplementation {
         if (parcel_name.equals("Papa")){
             rulesEngine.execute(data);
         }
-        
-    
     }
 
     private void publicTo(String jsonB, String token, String idParcel, String topic) throws MqttException, IOException, Exception {

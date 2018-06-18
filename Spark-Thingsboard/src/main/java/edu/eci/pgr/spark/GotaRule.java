@@ -36,9 +36,8 @@ import redis.clients.jedis.Transaction;
 
 /**
  *
- * @author cristian
+ * @author christian
  */
-@Service
 public class GotaRule extends Rule {
 
     private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
@@ -53,7 +52,6 @@ public class GotaRule extends Rule {
         actions = new ArrayList<>();
         actions.add(new ActionDroneFique());
         actions.add(new ActionSendAlert());
-
     }
 
     private String getValueOfRedis(String key, String idParcel) {
