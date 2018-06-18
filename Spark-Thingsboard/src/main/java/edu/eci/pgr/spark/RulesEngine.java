@@ -6,6 +6,8 @@
 package edu.eci.pgr.spark;
 
 import java.util.HashMap;
+import java.util.List;
+import org.reflections.Reflections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,12 +19,16 @@ import org.springframework.stereotype.Service;
 public class RulesEngine {
         
     public RulesEngine(){}
+
+    Reflections reflections = new Reflections("com.mycompany.rules");
     
-    @Autowired
-    private Rule rule;
+    private List<Rule> rules;
     
     public void execute(HashMap<String,String> data){
-        rule.execute(data);
+        for(Rule r: rules){
+            r.setData(data);
+            r.start();
+        }
     }
     
 }

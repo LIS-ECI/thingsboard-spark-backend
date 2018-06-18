@@ -12,8 +12,19 @@ import org.springframework.stereotype.Service;
  *
  * @author cristian
  */
-public interface Rule {
+public abstract class Rule extends Thread{
+
+    private HashMap<String,String> data;
     
-    public void execute(HashMap<String,String> data);
-    
+    public void execute(HashMap<String,String> data){};
+
+    public void run(HashMap<String,String> data){}
+
+    public HashMap<String, String> getData() {
+        return data;
+    }
+
+    public void setData(HashMap<String, String> data) {
+        this.data = data;
+    }
 }

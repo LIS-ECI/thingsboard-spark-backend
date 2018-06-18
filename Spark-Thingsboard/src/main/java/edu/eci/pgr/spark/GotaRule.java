@@ -39,7 +39,7 @@ import redis.clients.jedis.Transaction;
  * @author cristian
  */
 @Service
-public class GotaRule implements Rule {
+public class GotaRule extends Rule {
 
     private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
     private static final int TIME_ANALYSIS_MILISECONDS = 25000; //25 seconds 
@@ -91,6 +91,10 @@ public class GotaRule implements Rule {
     public void execute(HashMap<String, String> data) {
         String idParcel = data.get("idParcel");
         RuleAnalysis(idParcel, data.get("humidityData"), data.get("temperatureData"),data.get("first_time"));
+    }
+
+    public void run(){
+        execute(this.getData());
     }
 
     private void RuleAnalysis(String idParcel, String humidityData, String temperatureData,String first_time) {
