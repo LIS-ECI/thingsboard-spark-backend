@@ -6,32 +6,24 @@
 package org.thingsboard.samples.spark.precipitation;
 
 import com.baeldung.cassandra.java.client.CassandraConnector;
-import com.baeldung.cassandra.java.client.repository.FarmRepository;
 import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
-import com.baeldung.cassandra.java.client.repository.ParcelRepository;
+import com.baeldung.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
-import com.mycompany.entities.SparkDevice;
+
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.spark.api.java.function.Function;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -40,7 +32,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 import org.thingsboard.samples.spark.util.JedisUtil;
-import org.thingsboard.server.common.data.parcel.Parcel;
+import org.thingsboard.server.common.data.landlot.Landlot;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
@@ -91,22 +83,22 @@ public class MqttImplementation {
             if (!aggData.isEmpty()) {
                 HashMap<String, List<MutablePair>> hmap = new HashMap<>();
                 for (PrecipitationAndGeoZoneData agg: aggData){
-                    String idParcel=mdbs.findParcelsByDeviceId(agg.getDeviceId()).getId();
-                    if (hmap.containsKey(idParcel)){
-                         List<MutablePair> temp= hmap.get(idParcel);
+                    String idLandlot=mdbs.findLandlotsByDeviceId(agg.getDeviceId()).getId();
+                    if (hmap.containsKey(idLandlot)){
+                         List<MutablePair> temp= hmap.get(idLandlot);
                          temp.add(new MutablePair(agg.getPrecipitation(),agg.getCount()) );
-                         hmap.put(idParcel, temp);
+                         hmap.put(idLandlot, temp);
                     }
                     else{
                         List<MutablePair> temp= new ArrayList<>();
                         temp.add(new MutablePair(agg.getPrecipitation(),agg.getCount()));
-                        hmap.put(idParcel, temp);
+                        hmap.put(idLandlot, temp);
                     }
                 }
                 //Sacar promedio respecto al cultivo
                 HashMap<String, Double> hmap_promedios = new HashMap<>();
-                hmap.keySet().forEach((idParcel) -> {
-                    List<MutablePair> list= hmap.get(idParcel);
+                hmap.keySet().forEach((idLandlot) -> {
+                    List<MutablePair> list= hmap.get(idLandlot);
                    
                     Double total=0.0;
                     for (int i=0;i<list.size();i++){
@@ -121,14 +113,14 @@ public class MqttImplementation {
                         avg+=(cont/total)*value;
                     }
 
-                    hmap_promedios.put(idParcel, avg);
+                    hmap_promedios.put(idLandlot, avg);
                 });
                 //Enviar datos al device de spark 
-                hmap_promedios.keySet().forEach((idParcel) -> {
+                hmap_promedios.keySet().forEach((idLandlot) -> {
                     try {
                         //Sacar token del device de Spark del cultivo
-                        String token=getTokenSpark(idParcel,Topic);
-                        toDataJson(token,hmap_promedios.get(idParcel),idParcel,Topic);
+                        String token=getTokenSpark(idLandlot,Topic);
+                        toDataJson(token,hmap_promedios.get(idLandlot),idLandlot,Topic);
                     } catch (MqttException ex) {
                         Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (IOException ex) {
@@ -139,10 +131,10 @@ public class MqttImplementation {
             }
         }
         
-        private String getTokenSpark(String idParcel,String Topic){
+        private String getTokenSpark(String idLandlot,String Topic){
         String token=null;
         try {
-            token= mdbs.getTokenByIdParcelTopic(idParcel, Topic);
+            token= mdbs.getTokenByIdLandlotTopic(idLandlot, Topic);
         } catch (MongoDBException ex) {
             Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -150,7 +142,7 @@ public class MqttImplementation {
         }
         
         
-        private void review_data(String idParcel,String json){
+        private void review_data(String idLandlot,String json){
             boolean funciono = true;
             boolean func2=true;
             Double temperatureData;
@@ -158,9 +150,9 @@ public class MqttImplementation {
             Double humidityData=0.0;
             while (funciono){
                     Jedis jedis = JedisUtil.getPool().getResource();
-                    jedis.watch ("humidity"+idParcel);
+                    jedis.watch ("humidity"+idLandlot);
                     Transaction t = jedis.multi();
-                    Response<String> valor=t.get("humidity"+idParcel);
+                    Response<String> valor=t.get("humidity"+idLandlot);
                     List<Object> res = t.exec();
                     if (res.size()>0){
                         funciono=false;
@@ -174,9 +166,9 @@ public class MqttImplementation {
             System.out.println("humidityData: "+humidityData);
             while (func2){
                     Jedis jedis = JedisUtil.getPool().getResource();
-                    jedis.watch ("temperature"+idParcel);
+                    jedis.watch ("temperature"+idLandlot);
                     Transaction t = jedis.multi();
-                    Response<String> valor=t.get("temperature"+idParcel);
+                    Response<String> valor=t.get("temperature"+idLandlot);
 
                     List<Object> res = t.exec();
                     if (res.size()>0){
@@ -188,18 +180,18 @@ public class MqttImplementation {
                         temperatureData= Double.parseDouble(temperature.get("TemperatureAvg").toString());
                         precipitationData= Double.parseDouble(precipitation.get("PrecipitationAvg").toString());
                         //Si se cumple la condición se envía a otro spark
-                         //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
+                         //Uso De Cassandra Para saber el nombre del cultivo asociado al landlot
                         CassandraConnector connector = new CassandraConnector();
                         connector.connect("10.8.0.18", null);
                         Session session = connector.getSession();
                         KeyspaceRepository sr = new KeyspaceRepository(session);
                         sr.useKeyspace("thingsboard");
-                        ParcelRepository pr= new ParcelRepository(session);
-                        Parcel p= pr.selectById(idParcel);  
-                        String parcel_name=p.getCrop().getName();
+                        LandlotRepository pr= new LandlotRepository(session);
+                        Landlot p= pr.selectById(idLandlot);
+                        String landlot_name=p.getCrop().getName();
                         System.out.println("Nombre Cultivo: "+p.getCrop().getName());
-                        if (parcel_name.equals("Papa") && humidityData>70 && temperatureData>80 && precipitationData>3 ){  
-                            String token=getTokenSpark(idParcel,"spark_detection");
+                        if (landlot_name.equals("Papa") && humidityData>70 && temperatureData>80 && precipitationData>3 ){
+                            String token=getTokenSpark(idLandlot,"spark_detection");
                             try {
                                 connectToThingsboard(token);
                                 ObjectMapper mapper = new ObjectMapper();
@@ -219,12 +211,12 @@ public class MqttImplementation {
         }
         
         
-        private void publicTo(String jsonB,String token, String idParcel,String topic) throws MqttException, IOException, Exception{
+        private void publicTo(String jsonB,String token, String idLandlot,String topic) throws MqttException, IOException, Exception{
             connectToThingsboard(token);
             MqttMessage dataMsg = new MqttMessage(jsonB.getBytes(StandardCharsets.UTF_8));
             client.publish("v1/devices/me/telemetry", dataMsg, null, getCallback());                 
             client.disconnect();
-            review_data(idParcel,jsonB);
+            review_data(idLandlot,jsonB);
             
         }
 
@@ -245,13 +237,13 @@ public class MqttImplementation {
        
 
     
-    private void toDataJson(String token, Double temperature, String idParcel, String topic) throws JsonProcessingException, MqttException, IOException {
+    private void toDataJson(String token, Double temperature, String idLandlot, String topic) throws JsonProcessingException, MqttException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jsonB = mapper.createObjectNode();
         ObjectNode values = jsonB.put(TOPIC_TO_THINGSBOARD,temperature );
         if (jsonB.size()>0){
             try {
-                publicTo(mapper.writeValueAsString(jsonB),token,idParcel,topic);
+                publicTo(mapper.writeValueAsString(jsonB),token,idLandlot,topic);
             } catch (Exception ex) {
                 Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
             }

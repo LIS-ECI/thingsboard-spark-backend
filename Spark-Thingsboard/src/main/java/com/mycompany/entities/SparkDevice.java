@@ -10,14 +10,14 @@ package com.mycompany.entities;
  * @author carlos
  */
 public class SparkDevice {
-    private String id, idParcel,topic;
+    private String id, idLandlot,topic;
 
     public SparkDevice() {
     }
 
-    public SparkDevice(String id, String idParcel, String topic) {
+    public SparkDevice(String id, String idLandlot, String topic) {
         this.id = id;
-        this.idParcel = idParcel;
+        this.idLandlot = idLandlot;
         this.topic = topic;
     }
 
@@ -29,12 +29,12 @@ public class SparkDevice {
         this.id = id;
     }
 
-    public String getIdParcel() {
-        return idParcel;
+    public String getIdLandlot() {
+        return idLandlot;
     }
 
-    public void setIdParcel(String idParcel) {
-        this.idParcel = idParcel;
+    public void setIdLandlot(String idLandlot) {
+        this.idLandlot = idLandlot;
     }
 
     public String getTopic() {

@@ -12,6 +12,6 @@ package edu.eci.pgr.spark;
  */
 public interface Action {
     public void execute();
-    public String getIdParcel();
-    public void setIdParcel(String idParcel);
+    public String getIdLandlot();
+    public void setIdLandlot(String idLandlot);
 }

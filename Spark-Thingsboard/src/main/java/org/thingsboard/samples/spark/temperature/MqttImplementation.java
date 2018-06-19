@@ -6,26 +6,19 @@
 package org.thingsboard.samples.spark.temperature;
 
 import com.baeldung.cassandra.java.client.CassandraConnector;
-import com.baeldung.cassandra.java.client.repository.FarmRepository;
 import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
-import com.baeldung.cassandra.java.client.repository.ParcelRepository;
+import com.baeldung.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
-import com.mycompany.entities.SparkDevice;
 import edu.eci.pgr.spark.RulesEngine;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +26,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.spark.api.java.function.Function;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -45,7 +36,7 @@ import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.thingsboard.samples.spark.util.JedisUtil;
-import org.thingsboard.server.common.data.parcel.Parcel;
+import org.thingsboard.server.common.data.landlot.Landlot;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
@@ -95,22 +86,22 @@ public class MqttImplementation {
         if (!aggData.isEmpty()) {
             HashMap<String, List<MutablePair>> hmap = new HashMap<>();
             for (TemperatureAndGeoZoneData agg : aggData) {
-                String idParcel = mdbs.findParcelsByDeviceId(agg.getDeviceId()).getId();
+                String idLandlot = mdbs.findLandlotsByDeviceId(agg.getDeviceId()).getId();
 
-                if (hmap.containsKey(idParcel)) {
-                    List<MutablePair> temp = hmap.get(idParcel);
+                if (hmap.containsKey(idLandlot)) {
+                    List<MutablePair> temp = hmap.get(idLandlot);
                     temp.add(new MutablePair(agg.getTemperature(), agg.getCount()));
-                    hmap.put(idParcel, temp);
+                    hmap.put(idLandlot, temp);
                 } else {
                     List<MutablePair> temp = new ArrayList<>();
                     temp.add(new MutablePair(agg.getTemperature(), agg.getCount()));
-                    hmap.put(idParcel, temp);
+                    hmap.put(idLandlot, temp);
                 }
             }
             //Sacar promedio respecto al cultivo
             HashMap<String, Double> hmap_promedios = new HashMap<>();
-            hmap.keySet().forEach((idParcel) -> {
-                List<MutablePair> list = hmap.get(idParcel);
+            hmap.keySet().forEach((idLandlot) -> {
+                List<MutablePair> list = hmap.get(idLandlot);
 
                 Double total = 0.0;
                 for (int i = 0; i < list.size(); i++) {
@@ -125,14 +116,14 @@ public class MqttImplementation {
                     avg += (cont / total) * value;
                 }
 
-                hmap_promedios.put(idParcel, avg);
+                hmap_promedios.put(idLandlot, avg);
             });
             //Enviar datos al device de spark 
-            hmap_promedios.keySet().forEach((idParcel) -> {
+            hmap_promedios.keySet().forEach((idLandlot) -> {
                 try {
                     //Sacar token del device de Spark del cultivo
-                    String token = getTokenSpark(idParcel, Topic);
-                    toDataJson(token, hmap_promedios.get(idParcel), idParcel, Topic);
+                    String token = getTokenSpark(idLandlot, Topic);
+                    toDataJson(token, hmap_promedios.get(idLandlot), idLandlot, Topic);
                 } catch (MqttException ex) {
                     Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -143,35 +134,35 @@ public class MqttImplementation {
         }
     }
 
-    private String getTokenSpark(String idParcel, String Topic) {
+    private String getTokenSpark(String idLandlot, String Topic) {
         String token = null;
         try {
-            token = mdbs.getTokenByIdParcelTopic(idParcel, Topic);
+            token = mdbs.getTokenByIdLandlotTopic(idLandlot, Topic);
         } catch (MongoDBException ex) {
             Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
         return token;
     }
 
-    private String getParcelNameCassandra(String idParcel) {
+    private String getLandlotNameCassandra(String idLandlot) {
         CassandraConnector connector = new CassandraConnector();
         connector.connect("10.8.0.18", null);
         Session session = connector.getSession();
         KeyspaceRepository sr = new KeyspaceRepository(session);
         sr.useKeyspace("thingsboard");
-        ParcelRepository pr = new ParcelRepository(session);
-        Parcel p = pr.selectById(idParcel);
+        LandlotRepository pr = new LandlotRepository(session);
+        Landlot p = pr.selectById(idLandlot);
         return p.getCrop().getName();
     }
 
-    private String getValueOfRedis(String key, String idParcel) {
+    private String getValueOfRedis(String key, String idLandlot) {
         boolean funciono = true;
         String content = "";
         while (funciono) {
             Jedis jedis = JedisUtil.getPool().getResource();
-            jedis.watch(key + idParcel);
+            jedis.watch(key + idLandlot);
             Transaction t = jedis.multi();
-            Response<String> valor = t.get(key + idParcel);
+            Response<String> valor = t.get(key + idLandlot);
 
             List<Object> res = t.exec();
             if (res.size() > 0) {
@@ -183,43 +174,43 @@ public class MqttImplementation {
         return content;
     }
 
-    private void review_data(String idParcel, String json) {
+    private void review_data(String idLandlot, String json) {
 
         JSONObject temperature = new JSONObject(json);
         Double temperatureData = Double.parseDouble(temperature.get(TOPIC_TO_THINGSBOARD).toString());
-        String temphumi=getValueOfRedis("humidity", idParcel);
+        String temphumi=getValueOfRedis("humidity", idLandlot);
         Double humidityData=0.0;
         if (temphumi!=null){
-           humidityData = Double.parseDouble(getValueOfRedis("humidity", idParcel));
+           humidityData = Double.parseDouble(getValueOfRedis("humidity", idLandlot));
         }
         
-        String dataString = getValueOfRedis("data", idParcel);
-        String Parcelvalue = getValueOfRedis("value", idParcel);
+        String dataString = getValueOfRedis("data", idLandlot);
+        String Landlotvalue = getValueOfRedis("value", idLandlot);
 
         
         HashMap<String,String> data= new HashMap<>();
         data.put("humidityData",String.valueOf(humidityData));
         data.put("temperatureData", String.valueOf(temperatureData));
-        data.put("idParcel", idParcel);
+        data.put("idLandlot", idLandlot);
         
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS");
         Date now = new Date();
         data.put("first_time",  sdf.format(now));
 
-        //Uso De Cassandra Para saber el nombre del cultivo asociado al parcel
-        String parcel_name = getParcelNameCassandra(idParcel);
+        //Uso De Cassandra Para saber el nombre del cultivo asociado al landlot
+        String landlot_name = getLandlotNameCassandra(idLandlot);
         
-        if (parcel_name.equals("Papa")){
+        if (landlot_name.equals("Papa")){
             rulesEngine.execute(data);
         }
     }
 
-    private void publicTo(String jsonB, String token, String idParcel, String topic) throws MqttException, IOException, Exception {
+    private void publicTo(String jsonB, String token, String idLandlot, String topic) throws MqttException, IOException, Exception {
         connectToThingsboard(token);
         MqttMessage dataMsg = new MqttMessage(jsonB.getBytes(StandardCharsets.UTF_8));
         client.publish("v1/devices/me/telemetry", dataMsg, null, getCallback());
         client.disconnect();
-        review_data(idParcel, jsonB);
+        review_data(idLandlot, jsonB);
     }
 
     private IMqttActionListener getCallback() {
@@ -236,13 +227,13 @@ public class MqttImplementation {
         };
     }
 
-    private void toDataJson(String token, Double temperature, String idParcel, String topic) throws JsonProcessingException, MqttException, IOException {
+    private void toDataJson(String token, Double temperature, String idLandlot, String topic) throws JsonProcessingException, MqttException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jsonB = mapper.createObjectNode();
         ObjectNode values = jsonB.put(TOPIC_TO_THINGSBOARD, temperature);
         if (jsonB.size() > 0) {
             try {
-                publicTo(mapper.writeValueAsString(jsonB), token, idParcel, topic);
+                publicTo(mapper.writeValueAsString(jsonB), token, idLandlot, topic);
             } catch (Exception ex) {
                 Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
             }

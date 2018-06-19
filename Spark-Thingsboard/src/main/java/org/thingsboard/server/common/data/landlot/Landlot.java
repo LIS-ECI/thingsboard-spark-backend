@@ -3,23 +3,22 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.thingsboard.server.common.data.parcel;
+package org.thingsboard.server.common.data.landlot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import lombok.EqualsAndHashCode;
+
 import org.thingsboard.server.common.data.crop.Crop;
 import org.thingsboard.server.common.data.farm.Area;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.thingsboard.server.common.data.farm.IrrigationSystem;
 
 /**
  *
  * @author German Lopez
  */
-public class Parcel {
+public class Landlot {
 
     private static final long serialVersionUID = 2807343040519543363L;
 
@@ -33,11 +32,11 @@ public class Parcel {
     private GroundFeatures groundFeatures;
 
 
-    public Parcel() {
+    public Landlot() {
     }
 
 
-    public Parcel(String name, String type, String farmId, String crop, String cropsHistory, String totalArea, String groundFeatures) {
+    public Landlot(String name, String type, String farmId, String crop, String cropsHistory, String totalArea, String groundFeatures) {
         this.name = name;
         this.type = type;
         this.farmId = farmId;
@@ -48,7 +47,7 @@ public class Parcel {
             this.totalArea = mapper.readValue(totalArea, Area.class);
             this.groundFeatures = mapper.readValue(groundFeatures, GroundFeatures.class);
         } catch (IOException ex) {
-            Logger.getLogger(Parcel.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Landlot.class.getName()).log(Level.SEVERE, null, ex);
         }
         
     }
@@ -77,7 +76,7 @@ public class Parcel {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("Parcel [tenantId=");
+        builder.append("Landlot [tenantId=");
         builder.append(", customerId=");
         builder.append(", name=");
         builder.append(name);

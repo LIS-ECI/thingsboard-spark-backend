@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
-import com.mycompany.entities.SpatialParcel;
+import com.mycompany.entities.SpatialLandlot;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
@@ -33,7 +33,7 @@ public class ActionSendAlert implements Action {
     private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
     private MqttAsyncClient client;
     private MongoDBSpatial mdbs = new MongoDBSpatial();
-    private String idParcel;
+    private String idLandlot;
 
     public void connectToThingsboard(String token) throws Exception {
         client = new MqttAsyncClient(THINGSBOARD_MQTT_ENDPOINT, MqttAsyncClient.generateClientId());
@@ -57,10 +57,10 @@ public class ActionSendAlert implements Action {
 
     }
 
-    private String getTokenSpark(String idParcel, String Topic) {
+    private String getTokenSpark(String idLandlot, String Topic) {
         String token = null;
         try {
-            token = mdbs.getTokenByIdParcelTopic(idParcel, Topic);
+            token = mdbs.getTokenByIdLandlotTopic(idLandlot, Topic);
         } catch (MongoDBException ex) {
             Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -71,9 +71,9 @@ public class ActionSendAlert implements Action {
     public void execute() {
         MongoDBSpatial mdbs = new MongoDBSpatial();
 
-        SpatialParcel parcel = mdbs.getMongodbparcel().findById(getIdParcel());
+        SpatialLandlot landlot = mdbs.getMongodblandlot().findById(getIdLandlot());
 
-        List<List<Double>> datos = parcel.getPolygons().getCoordinates();
+        List<List<Double>> datos = landlot.getPolygons().getCoordinates();
         System.out.println(String.format("|%20s|%20s|", "Longitude", "Latitude"));
         for (List<Double> containData : datos) {
             double longitude = containData.get(0);
@@ -83,8 +83,8 @@ public class ActionSendAlert implements Action {
 
         System.out.println("Sending to neighbor crops ...");
 
-        System.out.println("ALERT: RISK OF Phytophthora infestans in crop with Id: getIdParcel()");
-        String token = getTokenSpark(getIdParcel(), "spark_detection");
+        System.out.println("ALERT: RISK OF Phytophthora infestans in crop with Id: getIdLandlot()");
+        String token = getTokenSpark(getIdLandlot(), "spark_detection");
 
         try {
             connectToThingsboard(token);
@@ -115,19 +115,19 @@ public class ActionSendAlert implements Action {
     }
 
     /**
-     * @return the idParcel
+     * @return the idLandlot
      */
     @Override
-    public String getIdParcel() {
-        return idParcel;
+    public String getIdLandlot() {
+        return idLandlot;
     }
 
     /**
-     * @param idParcel the idParcel to set
+     * @param idLandlot the idLandlot to set
      */
     @Override
-    public void setIdParcel(String idParcel) {
-        this.idParcel = idParcel;
+    public void setIdLandlot(String idLandlot) {
+        this.idLandlot = idLandlot;
     }
 
 }

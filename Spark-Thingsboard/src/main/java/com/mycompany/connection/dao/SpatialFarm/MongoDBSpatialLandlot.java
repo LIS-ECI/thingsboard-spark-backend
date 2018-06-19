@@ -12,7 +12,7 @@ import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.result.DeleteResult;
 import com.mycompany.connection.MongoConnectionPOJO;
 import com.mycompany.connection.dao.Dao;
-import com.mycompany.entities.SpatialParcel;
+import com.mycompany.entities.SpatialLandlot;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -20,35 +20,35 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Sonia
  */
-public class MongoDBSpatialParcel extends MongoConnectionPOJO<SpatialParcel> implements Dao<SpatialParcel> {
+public class MongoDBSpatialLandlot extends MongoConnectionPOJO<SpatialLandlot> implements Dao<SpatialLandlot> {
 
     @Override
-    public MongoCollection<SpatialParcel> getCollectionDependClass() {
-        return this.getMongoDatabase().getCollection("Parcels", SpatialParcel.class);
+    public MongoCollection<SpatialLandlot> getCollectionDependClass() {
+        return this.getMongoDatabase().getCollection("Landlots", SpatialLandlot.class);
     }
 
     @Override
-    public List<SpatialParcel> find() {
-        MongoCollection<SpatialParcel> farmCollection = getCollectionDependClass();
-        List<SpatialParcel> resultSet = new CopyOnWriteArrayList<>();
-        farmCollection.find().forEach((Block<SpatialParcel>) parcel -> {
-            resultSet.add(parcel);
+    public List<SpatialLandlot> find() {
+        MongoCollection<SpatialLandlot> farmCollection = getCollectionDependClass();
+        List<SpatialLandlot> resultSet = new CopyOnWriteArrayList<>();
+        farmCollection.find().forEach((Block<SpatialLandlot>) landlot -> {
+            resultSet.add(landlot);
         });
         return resultSet;
     }
 
     @Override
-    public SpatialParcel findById(String id) {
+    public SpatialLandlot findById(String id) {
         return getCollectionDependClass().find(eq("_id", id)).first();
     }
 
     @Override
-    public SpatialParcel save(SpatialParcel t){
+    public SpatialLandlot save(SpatialLandlot t){
         try{
             getCollectionDependClass().insertOne(t);
             return t;
         }catch(MongoWriteException ex){
-            System.out.println("No fue posible agregar el parcel");
+            System.out.println("No fue posible agregar el landlot");
             
         }
         return null;

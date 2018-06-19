@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 public class ActionDroneFique implements Action {
     
     public ActionDroneFique(){}
-    private String idParcel;
+    private String idLandlot;
 
 
     @Override
@@ -23,19 +23,19 @@ public class ActionDroneFique implements Action {
     }
 
     /**
-     * @return the idParcel
+     * @return the idLandlot
      */
     @Override
-    public String getIdParcel() {
-        return idParcel;
+    public String getIdLandlot() {
+        return idLandlot;
     }
 
     /**
-     * @param idParcel the idParcel to set
+     * @param idLandlot the idLandlot to set
      */
     @Override
-    public void setIdParcel(String idParcel) {
-        this.idParcel = idParcel;
+    public void setIdLandlot(String idLandlot) {
+        this.idLandlot = idLandlot;
     }
     
 }

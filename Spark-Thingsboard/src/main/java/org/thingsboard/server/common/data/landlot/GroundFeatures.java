@@ -1,4 +1,4 @@
-package org.thingsboard.server.common.data.parcel;
+package org.thingsboard.server.common.data.landlot;
 
 public class GroundFeatures {
 

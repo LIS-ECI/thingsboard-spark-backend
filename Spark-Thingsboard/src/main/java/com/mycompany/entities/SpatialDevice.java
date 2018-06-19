@@ -13,15 +13,15 @@ import com.mycompany.entities.model.Point;
  */
 public class SpatialDevice {
 
-    private String id, device_Parcel_FK;
+    private String id, device_Landlot_FK;
     private Point point;
 
     public SpatialDevice() {
     }
 
-    public SpatialDevice(String id, String device_Parcel_FK, Point point) {
+    public SpatialDevice(String id, String device_Landlot_FK, Point point) {
         this.id = id;
-        this.device_Parcel_FK = device_Parcel_FK;
+        this.device_Landlot_FK = device_Landlot_FK;
         this.point = point;
     }
 
@@ -33,12 +33,12 @@ public class SpatialDevice {
         this.id = id;
     }
 
-    public String getDevice_Parcel_FK() {
-        return device_Parcel_FK;
+    public String getDevice_Landlot_FK() {
+        return device_Landlot_FK;
     }
 
-    public void setDevice_Parcel_FK(String device_Parcel_FK) {
-        this.device_Parcel_FK = device_Parcel_FK;
+    public void setDevice_Landlot_FK(String device_Landlot_FK) {
+        this.device_Landlot_FK = device_Landlot_FK;
     }
 
     public Point getPoint() {
@@ -51,7 +51,7 @@ public class SpatialDevice {
 
     @Override
     public String toString(){
-        return ("DeviceId: "+id+" ,device_Parcel_FK: "+device_Parcel_FK+" ,Point: "+point.getCoordinates());
+        return ("DeviceId: "+id+" ,device_Landlot_FK: "+device_Landlot_FK+" ,Point: "+point.getCoordinates());
     }
 
 }

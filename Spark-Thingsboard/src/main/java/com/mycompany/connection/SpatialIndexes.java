@@ -7,7 +7,7 @@ package com.mycompany.connection;
 
 import com.mycompany.entities.SpatialDevice;
 import com.mycompany.entities.SpatialFarm;
-import com.mycompany.entities.SpatialParcel;
+import com.mycompany.entities.SpatialLandlot;
 
 /**
  *
@@ -17,9 +17,9 @@ public interface SpatialIndexes {
     
     public SpatialFarm findFarmsByDeviceId(String device_id) throws MongoDBException;
     
-    public String getTokenByIdParcelTopic(String idParcel,String token) throws MongoDBException;
+    public String getTokenByIdLandlotTopic(String idLandlot,String token) throws MongoDBException;
     
-    public SpatialParcel findParcelsByDeviceId(String device_id) throws MongoDBException;
+    public SpatialLandlot findLandlotsByDeviceId(String device_id) throws MongoDBException;
     
     public SpatialDevice getCoordenatesByDeviceId(String device_id) throws MongoDBException;
 }

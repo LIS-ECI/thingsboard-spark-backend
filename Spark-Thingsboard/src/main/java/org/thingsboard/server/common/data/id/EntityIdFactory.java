@@ -37,8 +37,8 @@ public class EntityIdFactory {
             
             case FARM:
                 return new FarmId(uuid);
-            case PARCEL:
-                return new ParcelId(uuid);
+            case LANDLOT:
+                return new LandlotId(uuid);
         }
         throw new IllegalArgumentException("EntityType " + type + " is not supported!");
     }

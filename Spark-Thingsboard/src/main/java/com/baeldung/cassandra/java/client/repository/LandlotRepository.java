@@ -8,23 +8,23 @@ package com.baeldung.cassandra.java.client.repository;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import org.thingsboard.server.common.data.id.ParcelId;
-import org.thingsboard.server.common.data.parcel.Parcel;
+import org.thingsboard.server.common.data.id.LandlotId;
+import org.thingsboard.server.common.data.landlot.Landlot;
 
 /**
  *
  * @author cristian
  */
-public class ParcelRepository {
-    private static final String TABLE_NAME = "parcel";
+public class LandlotRepository {
+    private static final String TABLE_NAME = "landlot";
     
     private Session session;
     
-    public ParcelRepository(Session session) {
+    public LandlotRepository(Session session) {
         this.session = session;
     }
-    public Parcel selectById(String id) {
-        ParcelId farmId=  ParcelId.fromString(id);
+    public Landlot selectById(String id) {
+        LandlotId farmId=  LandlotId.fromString(id);
         System.out.println(farmId.toString());
         StringBuilder sb = new StringBuilder("SELECT * FROM ").append(TABLE_NAME).append(" WHERE id = ").append(farmId).append(";");
         final String query = sb.toString();
@@ -34,13 +34,13 @@ public class ParcelRepository {
         ResultSet rs = session.execute(query);
 
         System.out.println("result "+rs.toString());
-        Parcel parcel=null;
+        Landlot landlot=null;
 
         for (Row r : rs) {
-            parcel= new Parcel(r.getString("name"),r.getString("type"),r.getString("farm_id"),r.getString("crop"),r.getString("crops_history"),r.getString("total_area"),r.getString("ground_features"));
+            landlot= new Landlot(r.getString("name"),r.getString("type"),r.getString("farm_id"),r.getString("crop"),r.getString("crops_history"),r.getString("total_area"),r.getString("ground_features"));
         }
-        System.out.println("parcel:" +parcel);
+        System.out.println("landlot:" +landlot);
 
-        return parcel;
+        return landlot;
     }
 }
