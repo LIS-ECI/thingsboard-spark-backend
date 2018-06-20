@@ -44,7 +44,7 @@ import redis.clients.jedis.Transaction;
 @Slf4j
 public class MqttImplementation {
     
-    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
+    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
     private static final String TOPIC_TO_THINGSBOARD = "PrecipitationAvg";
 
     private  MqttAsyncClient client;
@@ -182,7 +182,7 @@ public class MqttImplementation {
                         //Si se cumple la condición se envía a otro spark
                          //Uso De Cassandra Para saber el nombre del cultivo asociado al landlot
                         CassandraConnector connector = new CassandraConnector();
-                        connector.connect("10.8.0.18", null);
+                        connector.connect("localhost", null);
                         Session session = connector.getSession();
                         KeyspaceRepository sr = new KeyspaceRepository(session);
                         sr.useKeyspace("thingsboard");

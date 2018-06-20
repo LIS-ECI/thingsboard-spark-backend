@@ -39,7 +39,7 @@ import redis.clients.jedis.Transaction;
 @Slf4j
 public class MqttImplementation {
     
-    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
+    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
     private static final String TOPIC_TO_THINGSBOARD = "HumidityAvg";
 
     private  MqttAsyncClient client;

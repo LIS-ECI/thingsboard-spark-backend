@@ -7,10 +7,10 @@ public class Enviroment {
     private Climatology climatology;
     private String orography;
     private float municipalDistance;
-    private Access access;
+    private List<String> access;
     private String highwayState;
 
-    public Enviroment(Climatology climatology, String orography, float municipalDistance, Access access, String highwayState) {
+    public Enviroment(Climatology climatology, String orography, float municipalDistance, List<String> access, String highwayState) {
         this.climatology = climatology;
         this.orography = orography;
         this.municipalDistance = municipalDistance;
@@ -44,11 +44,11 @@ public class Enviroment {
         this.municipalDistance = municipalDistance;
     }
 
-    public Access getAccess() {
+    public List<String> getAccess() {
         return this.access;
     }
 
-    public void setAccess(Access access) {
+    public void setAccess(List<String> access) {
         this.access = access;
     }
 

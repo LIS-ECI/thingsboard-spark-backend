@@ -12,22 +12,22 @@ import java.util.List;
  * @author Sonia
  */
 public class Polygon {
-    private List<List<Double>> coordinates;
+    private List<List<List<Double>>> coordinates;
     private String type;
 
     public Polygon() {
     }
 
-    public Polygon(List<List<Double>> coordinates, String type) {
+    public Polygon(List<List<List<Double>>> coordinates, String type) {
         this.coordinates = coordinates;
         this.type = type;
     }
 
-    public List<List<Double>> getCoordinates() {
+    public List<List<List<Double>>> getCoordinates() {
         return coordinates;
     }
 
-    public void setCoordinates(List<List<Double>> coordinates) {
+    public void setCoordinates(List<List<List<Double>>> coordinates) {
         this.coordinates = coordinates;
     }
 

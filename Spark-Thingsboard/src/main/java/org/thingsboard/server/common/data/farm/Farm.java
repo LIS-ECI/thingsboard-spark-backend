@@ -85,9 +85,6 @@ public class Farm {
         StringBuilder builder = new StringBuilder();
         builder.append(", name=");
         builder.append(name);
-        builder.append(", type=");
-        builder.append(type);
-        builder.append("]");
         return builder.toString();
     }
 

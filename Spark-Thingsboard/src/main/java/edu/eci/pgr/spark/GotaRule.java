@@ -69,7 +69,7 @@ public class GotaRule extends Rule {
     
     private String getLandlotNameCassandra(String idLandlot) {
         CassandraConnector connector = new CassandraConnector();
-        connector.connect("10.8.0.18", null);
+        connector.connect("localhost", null);
         Session session = connector.getSession();
         KeyspaceRepository sr = new KeyspaceRepository(session);
         sr.useKeyspace("thingsboard");

@@ -30,7 +30,7 @@ import org.thingsboard.samples.spark.temperature.MqttImplementation;
 @Slf4j
 public class ActionSendAlert implements Action {
 
-    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
+    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
     private MqttAsyncClient client;
     private MongoDBSpatial mdbs = new MongoDBSpatial();
     private String idLandlot;
@@ -73,9 +73,9 @@ public class ActionSendAlert implements Action {
 
         SpatialLandlot landlot = mdbs.getMongodblandlot().findById(getIdLandlot());
 
-        List<List<Double>> datos = landlot.getPolygons().getCoordinates();
+        List<List<List<Double>>> datos = landlot.getPolygons().getCoordinates();
         System.out.println(String.format("|%20s|%20s|", "Longitude", "Latitude"));
-        for (List<Double> containData : datos) {
+        for (List<Double> containData : datos.get(0)) {
             double longitude = containData.get(0);
             double latitude = containData.get(1);
             System.out.println(String.format("|%20s|%20s|", Double.toString(longitude), Double.toString(latitude)));

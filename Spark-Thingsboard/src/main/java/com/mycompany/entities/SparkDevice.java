@@ -10,15 +10,16 @@ package com.mycompany.entities;
  * @author carlos
  */
 public class SparkDevice {
-    private String id, idLandlot,topic;
+    private String id, idLandlot,token,topic;
 
     public SparkDevice() {
     }
 
-    public SparkDevice(String id, String idLandlot, String topic) {
+    public SparkDevice(String id, String idLandlot, String token,String topic) {
         this.id = id;
         this.idLandlot = idLandlot;
         this.topic = topic;
+        this.token=token;
     }
 
     public String getId() {
@@ -27,6 +28,14 @@ public class SparkDevice {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public String getIdLandlot() {

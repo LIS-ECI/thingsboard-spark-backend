@@ -71,8 +71,9 @@ public class MongoDBSpatial extends MongoConnection implements SpatialIndexes {
         StringBuilder token = new StringBuilder();
         System.out.println("get token: idLandlot:"+idLandlot+" topic: "+topic);
         mongodbspark.getCollectionDependClass().find(and(eq("idLandlot",idLandlot),eq("topic",topic))).forEach((Block<SparkDevice>) sparkDevice -> {
-            token.append(sparkDevice.getId());
+            token.append(sparkDevice.getToken());
         });
+        System.out.println("retorno token: "+token.toString());
         return token.toString();
     }
 
