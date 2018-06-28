@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
 import com.mycompany.entities.SpatialLandlot;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
@@ -21,14 +22,14 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.thingsboard.samples.spark.temperature.MqttImplementation;
+
 
 /**
  *
  * @author cristian
  */
 @Slf4j
-public class ActionSendAlert implements Action {
+public class ActionSendAlert implements Action,Serializable {
 
     private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
     private MqttAsyncClient client;
@@ -62,7 +63,7 @@ public class ActionSendAlert implements Action {
         try {
             token = mdbs.getTokenByIdLandlotTopic(idLandlot, Topic);
         } catch (MongoDBException ex) {
-            Logger.getLogger(MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ActionSendAlert.class.getName()).log(Level.SEVERE, null, ex);
         }
         return token;
     }
@@ -84,19 +85,19 @@ public class ActionSendAlert implements Action {
         System.out.println("Sending to neighbor crops ...");
 
         System.out.println("ALERT: RISK OF Phytophthora infestans in crop with Id: getIdLandlot()");
-        String token = getTokenSpark(getIdLandlot(), "spark_detection");
+        //String token = getTokenSpark(getIdLandlot(), "spark_detection");
 
-        try {
-            connectToThingsboard(token);
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode dataUrg = mapper.createObjectNode();
-            ObjectNode values = dataUrg.put("pest_risk", 1);
-            MqttMessage dataMsg2 = new MqttMessage(mapper.writeValueAsString(dataUrg).getBytes(StandardCharsets.UTF_8));
-            client.publish("v1/devices/me/telemetry", dataMsg2, null, getCallback());
-            client.disconnect();
-        } catch (Exception ex) {
-            Logger.getLogger(org.thingsboard.samples.spark.precipitation.MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        //try {
+            //connectToThingsboard(token);
+            //ObjectMapper mapper = new ObjectMapper();
+            //ObjectNode dataUrg = mapper.createObjectNode();
+            //ObjectNode values = dataUrg.put("pest_risk", 1);
+            //MqttMessage dataMsg2 = new MqttMessage(mapper.writeValueAsString(dataUrg).getBytes(StandardCharsets.UTF_8));
+            //client.publish("v1/devices/me/telemetry", dataMsg2, null, getCallback());
+            //client.disconnect();
+        //} catch (Exception ex) {
+        //    Logger.getLogger(org.thingsboard.samples.spark.precipitation.MqttImplementation.class.getName()).log(Level.SEVERE, null, ex);
+        //}
 
     }
 

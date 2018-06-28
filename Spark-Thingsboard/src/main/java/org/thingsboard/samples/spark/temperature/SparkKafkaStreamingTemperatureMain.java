@@ -35,6 +35,7 @@ import scala.Tuple2;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.spark.api.java.JavaSparkContext;
 
 
 public class SparkKafkaStreamingTemperatureMain {
@@ -69,19 +70,21 @@ public class SparkKafkaStreamingTemperatureMain {
     @Slf4j
     private static class StreamRunner {
 
-        private MqttImplementation mqttImplementation;
-
+        private ReviewData reviewData;
         StreamRunner() throws Exception {
             //restClient = new RestClient();
-            mqttImplementation = new MqttImplementation();
+            reviewData = new ReviewData();
             
         }
 
         void start() throws Exception {
             SparkConf conf = new SparkConf().setAppName(APP_NAME).setMaster("local");
             
+
                 try (JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(STREAM_WINDOW_MILLISECONDS))) {
 
+                 
+                    
                 JavaInputDStream<ConsumerRecord<String, String>> stream =
                         KafkaUtils.createDirectStream(
                                 ssc,
@@ -89,12 +92,12 @@ public class SparkKafkaStreamingTemperatureMain {
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
 
+                
                 stream.foreachRDD(rdd ->
                 {
-                    
                     // Map incoming JSON to WindSpeedAndGeoZoneData objects
                     JavaRDD<TemperatureAndGeoZoneData> windRdd = rdd.map(new TemperatureStationDataMapper());
-                    // Map WindSpeedAndGeoZoneData objects by GeoZone
+                    // Map WindSpeedAndGeoZoneData objects by DeviceID
 
                     JavaPairRDD<String, AvgTemperatureData> temperatureByZoneRdd = windRdd.mapToPair(d -> new Tuple2<>(d.getDeviceId(), new AvgTemperatureData(d.getTemperature())));                    
 // Reduce all data volume by GeoZone key
@@ -103,9 +106,10 @@ public class SparkKafkaStreamingTemperatureMain {
                     List<TemperatureAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new TemperatureAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
 // Push aggregated data to ThingsBoard Asset
                     //restClient.sendTelemetryToAsset(aggData);
-                    mqttImplementation.publishTelemetryToThingsboard(aggData,Topic);
+                    reviewData.analizeTelemetry(aggData,Topic,ssc);
 
                 });
+                
                 ssc.start();
                 ssc.awaitTermination();
             }

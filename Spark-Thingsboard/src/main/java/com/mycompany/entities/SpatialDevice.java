@@ -6,12 +6,13 @@
 package com.mycompany.entities;
 
 import com.mycompany.entities.model.Point;
+import java.io.Serializable;
 
 /**
  *
  * @author Sonia
  */
-public class SpatialDevice {
+public class SpatialDevice implements Serializable {
 
     private String id, device_Landlot_FK;
     private Point point;

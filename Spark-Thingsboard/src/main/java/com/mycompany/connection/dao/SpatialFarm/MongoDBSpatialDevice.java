@@ -13,6 +13,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mycompany.connection.MongoConnectionPOJO;
 import com.mycompany.connection.dao.Dao;
 import com.mycompany.entities.SpatialDevice;
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Sonia
  */
-public class MongoDBSpatialDevice extends MongoConnectionPOJO<SpatialDevice> implements Dao<SpatialDevice> {
+public class MongoDBSpatialDevice extends MongoConnectionPOJO<SpatialDevice> implements Dao<SpatialDevice>,Serializable {
 
     @Override
     public MongoCollection<SpatialDevice> getCollectionDependClass() {

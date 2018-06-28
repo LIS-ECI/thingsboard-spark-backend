@@ -80,12 +80,9 @@ public class GotaRule extends Rule {
     
     @Override
     public void execute(HashMap<String, String> data) {
+        System.out.println("entró");
         String idLandlot = data.get("idLandlot");
         RuleAnalysis(idLandlot, data.get("humidityData"), data.get("temperatureData"),data.get("first_time"));
-    }
-
-    public void run(){
-        execute(this.getData());
     }
 
     private void RuleAnalysis(String idLandlot, String humidityData, String temperatureData,String first_time) {
@@ -95,6 +92,7 @@ public class GotaRule extends Rule {
         String analysisString = getValueOfRedis("analysisString", idLandlot);
         String analysisValue = getValueOfRedis("analysisValue", idLandlot);
         String start_time = getValueOfRedis("start_time", idLandlot);
+        System.out.println("STARTTIME :O"+ start_time);
         String condition="-"; 
         int value=0;
         String landlot_name = getLandlotNameCassandra(idLandlot);
@@ -109,7 +107,7 @@ public class GotaRule extends Rule {
                 analysisValue = String.valueOf(value);
                 //Inicializar fecha
                 saveToRedis("start_time", idLandlot, String.valueOf(now_long));
-                start_time=String.valueOf(now);
+                start_time=String.valueOf(now_long);
 
             } //Si se cumplieron las 11 horas
             else if (analysisString.length() == (TIME_ANALYSIS_MILISECONDS / STREAM_WINDOW_MILLISECONDS) - 1) {
@@ -168,7 +166,7 @@ public class GotaRule extends Rule {
         saveToRedis("analysisString", idLandlot, analysisString);
         saveToRedis("analysisValue", idLandlot, analysisValue);
         String warning = getValueOfRedis("Warning", idLandlot);
-
+        System.out.println("start_time :o "+start_time);
         //SI es el primer dia
         boolean day1=(TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR)< (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR);
         boolean day2=(TIME_DAY_MILISECONDS*2 - TIME_DAY_MILISECONDS_ERROR)< (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS*2 + TIME_DAY_MILISECONDS_ERROR);

@@ -12,13 +12,11 @@ import org.springframework.stereotype.Service;
  *
  * @author cristian
  */
-public abstract class Rule extends Thread{
+public abstract class Rule  {
 
     private HashMap<String,String> data;
     
     public void execute(HashMap<String,String> data){};
-
-    public void run(HashMap<String,String> data){}
 
     public HashMap<String, String> getData() {
         return data;

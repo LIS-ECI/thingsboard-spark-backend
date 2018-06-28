@@ -6,12 +6,13 @@
 package com.mycompany.entities;
 
 import com.mycompany.entities.model.Polygon;
+import java.io.Serializable;
 
 /**
  *
  * @author Sonia
  */
-public class SpatialLandlot {
+public class SpatialLandlot implements Serializable{
 
     private String id, landlot_Farm_FK;
     private Polygon polygons;

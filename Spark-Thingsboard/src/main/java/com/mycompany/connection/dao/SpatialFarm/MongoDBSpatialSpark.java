@@ -13,6 +13,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mycompany.connection.MongoConnectionPOJO;
 import com.mycompany.connection.dao.Dao;
 import com.mycompany.entities.SparkDevice;
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author carlos
  */
-public class MongoDBSpatialSpark extends MongoConnectionPOJO<SparkDevice> implements Dao<SparkDevice> {
+public class MongoDBSpatialSpark extends MongoConnectionPOJO<SparkDevice> implements Dao<SparkDevice>,Serializable {
 
     @Override
     public MongoCollection<SparkDevice> getCollectionDependClass() {

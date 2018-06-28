@@ -16,12 +16,13 @@ import com.mycompany.connection.dao.SpatialFarm.MongoDBSpatialLandlot;
 import com.mycompany.entities.SpatialDevice;
 import com.mycompany.entities.SpatialFarm;
 import com.mycompany.entities.SpatialLandlot;
+import java.io.Serializable;
 
 /**
  *
  * @author Sonia
  */
-public class MongoDBSpatial extends MongoConnection implements SpatialIndexes {
+public class MongoDBSpatial extends MongoConnection implements SpatialIndexes,Serializable {
 
     private final MongoDBSpatialLandlot mongodblandlot;
     private final MongoDBSpatialFarm mongodbFarm;

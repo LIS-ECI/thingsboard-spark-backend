@@ -194,31 +194,12 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <finalName>SparkKafkaStreamingHumidity</finalName>
+                            <finalName>Spark-Humidity-KafkaStreaming</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
 
-                    <execution>
-                        <id>make-assembly2</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>org.thingsboard.samples.spark.precipitation.SparkKafkaStreamingPrecipitationMain</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>SparkKafkaStreamingPrecipitation</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-                    
+                   
                     <execution>
                         <id>make-assembly3</id>
                         <phase>package</phase>
@@ -234,7 +215,7 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <finalName>SparkKafkaStreamingTemperature</finalName>
+                            <finalName>Spark-Temperature-KafkaStreaming</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>

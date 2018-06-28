@@ -13,6 +13,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mycompany.connection.MongoConnectionPOJO;
 import com.mycompany.connection.dao.Dao;
 import com.mycompany.entities.SpatialLandlot;
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Sonia
  */
-public class MongoDBSpatialLandlot extends MongoConnectionPOJO<SpatialLandlot> implements Dao<SpatialLandlot> {
+public class MongoDBSpatialLandlot extends MongoConnectionPOJO<SpatialLandlot> implements Dao<SpatialLandlot>, Serializable{
 
     @Override
     public MongoCollection<SpatialLandlot> getCollectionDependClass() {

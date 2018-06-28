@@ -69,11 +69,11 @@ public class SparkKafkaStreamingHumidityMain {
     @Slf4j
     private static class StreamRunner {
 
-        private MqttImplementation mqttImplementation;
+        private ReviewData reviewData;
 
         StreamRunner() throws Exception {
             //restClient = new RestClient();
-            mqttImplementation = new MqttImplementation();
+            reviewData = new ReviewData();
             
         }
 
@@ -103,7 +103,7 @@ public class SparkKafkaStreamingHumidityMain {
                     List<HumidityAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new HumidityAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
 // Push aggregated data to ThingsBoard Asset
                     //restClient.sendTelemetryToAsset(aggData);
-                    mqttImplementation.publishTelemetryToThingsboard(aggData,Topic);
+                    reviewData.analizeTelemetry(aggData,Topic,ssc);
 
                 });
                 ssc.start();
