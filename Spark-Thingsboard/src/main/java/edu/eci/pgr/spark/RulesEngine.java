@@ -17,7 +17,6 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.spark.api.java.JavaRDD;
-import org.reflections.Reflections;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class RulesEngine implements Serializable{
     
-    private Reflections reflections;
     private static List<Rule> rules;
     public static HashMap<String, String> data2;
 
