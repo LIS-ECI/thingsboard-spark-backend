@@ -21,13 +21,13 @@ public class CassandraClient {
     //Example
     public static void main(String args[]) {
         CassandraConnector connector = new CassandraConnector();
-        connector.connect("localhost", null);
+        connector.connect("10.8.0.19", null);
         Session session = connector.getSession();
 
         KeyspaceRepository sr = new KeyspaceRepository(session);
         sr.useKeyspace("thingsboard");
         LandlotRepository fr= new LandlotRepository(session);
-        Landlot f= fr.selectById("ac087bb0-735d-11e8-a927-716afda0ec87");   
+        Landlot f= fr.selectById("321a7e50-74e5-11e8-9cab-55a210069b83");   
         System.out.println("farm: "+f);
         connector.close();
     }
