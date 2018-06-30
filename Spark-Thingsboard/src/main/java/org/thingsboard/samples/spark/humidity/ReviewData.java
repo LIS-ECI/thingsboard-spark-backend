@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
+import edu.eci.pgr.spark.RulesEngine;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -56,9 +57,8 @@ public class ReviewData implements Serializable{
         mdbs = new MongoDBSpatial();
     }
 
-    public void analizeTelemetry(List<HumidityAndGeoZoneData> aggData, String Topic) throws Exception {
-        if (!aggData.isEmpty()) {
-            JavaRDD<HumidityAndGeoZoneData> telemetryData = SparkKafkaStreamingHumidityMain.sc.parallelize(aggData);
+    public void analizeTelemetry(JavaRDD<HumidityAndGeoZoneData> telemetryData, String Topic,RulesEngine rulesEngine) throws Exception {
+        
 
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;
@@ -82,7 +82,7 @@ public class ReviewData implements Serializable{
                 saveToRedis(Topic, data._1, String.valueOf(data._2));
 
             });
-        }
+        
     }
 
     private void saveToRedis(String key, String idLandlot, String data) {

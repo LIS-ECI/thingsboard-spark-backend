@@ -1,8 +1,9 @@
 package edu.eci.pgr.spark;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
-public class RuleTests extends  Rule {
+public class RuleTests extends  Rule implements Serializable{
     
     public RuleTests(){}
     

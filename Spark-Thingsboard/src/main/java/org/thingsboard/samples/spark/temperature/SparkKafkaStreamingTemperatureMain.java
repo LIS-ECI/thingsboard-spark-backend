@@ -16,6 +16,8 @@
 package org.thingsboard.samples.spark.temperature;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.eci.pgr.spark.Rule;
+import edu.eci.pgr.spark.RulesEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -49,8 +51,6 @@ public class SparkKafkaStreamingTemperatureMain {
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
     public static final String APP_NAME = "Kafka Spark Streaming App";
-   
-    public static JavaSparkContext sc;
 
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {
@@ -92,8 +92,7 @@ public class SparkKafkaStreamingTemperatureMain {
                                 LocationStrategies.PreferConsistent(),
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
-
-                sc=ssc.sparkContext();
+                
                 stream.foreachRDD(rdd ->
                 {
                     // Map incoming JSON to WindSpeedAndGeoZoneData objects
@@ -107,7 +106,12 @@ public class SparkKafkaStreamingTemperatureMain {
                     List<TemperatureAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new TemperatureAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
 // Push aggregated data to ThingsBoard Asset
                     //restClient.sendTelemetryToAsset(aggData);
-                    reviewData.analizeTelemetry(aggData,Topic);
+                    if (!aggData.isEmpty()) {
+                        JavaRDD<TemperatureAndGeoZoneData> telemetryData = ssc.sparkContext().parallelize(aggData);
+
+                        reviewData.analizeTelemetry(telemetryData,Topic);
+                    }
+                    
 
                 });
                 

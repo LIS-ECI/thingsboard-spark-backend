@@ -13,6 +13,7 @@ import com.datastax.driver.core.Session;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,7 +32,7 @@ import redis.clients.jedis.Transaction;
  *
  * @author christian
  */
-public class GotaRule extends Rule {
+public class GotaRule extends Rule implements Serializable{
 
     private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
     private static final int TIME_ANALYSIS_MILISECONDS = 25000; //25 seconds 

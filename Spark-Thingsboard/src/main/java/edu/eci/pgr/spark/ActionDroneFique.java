@@ -5,13 +5,14 @@
  */
 package edu.eci.pgr.spark;
 
+import java.io.Serializable;
 import org.springframework.stereotype.Service;
 
 /**
  *
  * @author cristian
  */
-public class ActionDroneFique implements Action {
+public class ActionDroneFique implements Action,Serializable {
     
     public ActionDroneFique(){}
     private String idLandlot;

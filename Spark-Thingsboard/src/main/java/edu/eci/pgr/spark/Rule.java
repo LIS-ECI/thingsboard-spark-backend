@@ -5,6 +5,7 @@
  */
 package edu.eci.pgr.spark;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
  *
  * @author cristian
  */
-public abstract class Rule  {
+public abstract class Rule  implements Serializable{
 
     private HashMap<String,String> data;
     

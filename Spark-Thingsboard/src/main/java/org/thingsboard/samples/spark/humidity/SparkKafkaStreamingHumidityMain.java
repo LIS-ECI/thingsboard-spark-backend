@@ -16,6 +16,7 @@
 package org.thingsboard.samples.spark.humidity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.eci.pgr.spark.RulesEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -48,7 +49,7 @@ public class SparkKafkaStreamingHumidityMain {
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
     public static final String APP_NAME = "Kafka Spark Streaming App";
-    public static JavaSparkContext sc;
+    private static RulesEngine rulesEngine; 
 
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {
@@ -73,6 +74,7 @@ public class SparkKafkaStreamingHumidityMain {
 
         StreamRunner() throws Exception {
             //restClient = new RestClient();
+            rulesEngine= new RulesEngine();
             reviewData = new ReviewData();
             
         }
@@ -88,7 +90,6 @@ public class SparkKafkaStreamingHumidityMain {
                                 LocationStrategies.PreferConsistent(),
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
-                sc=ssc.sparkContext();
                 stream.foreachRDD(rdd ->
                 {
                     
@@ -103,8 +104,11 @@ public class SparkKafkaStreamingHumidityMain {
                     List<HumidityAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new HumidityAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
 // Push aggregated data to ThingsBoard Asset
                     //restClient.sendTelemetryToAsset(aggData);
-                    reviewData.analizeTelemetry(aggData,Topic);
-
+                   if (!aggData.isEmpty()) {
+                        JavaRDD<HumidityAndGeoZoneData> telemetryData = ssc.sparkContext().parallelize(aggData);
+                        reviewData.analizeTelemetry(telemetryData,Topic,rulesEngine);
+                   }
+                    
                 });
                 ssc.start();
                 ssc.awaitTermination();

@@ -11,6 +11,7 @@ import com.baeldung.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
+import edu.eci.pgr.spark.Rule;
 import edu.eci.pgr.spark.RulesEngine;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -49,19 +50,18 @@ public class ReviewData implements Serializable{
     //private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
     //private MqttAsyncClient client;
     private MongoDBSpatial mdbs;
-    private RulesEngine rulesEngine ;
+    private static RulesEngine rulesEngine = new RulesEngine();
+
 
     
     
     ReviewData( ) {
         mdbs = new MongoDBSpatial();
-        rulesEngine= new RulesEngine();
         //ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
     }
 
-    public void analizeTelemetry(List<TemperatureAndGeoZoneData> aggData, String Topic) {
-        if (!aggData.isEmpty()) {
-            JavaRDD<TemperatureAndGeoZoneData> telemetryData = SparkKafkaStreamingTemperatureMain.sc.parallelize(aggData);
+    public void analizeTelemetry(JavaRDD<TemperatureAndGeoZoneData> telemetryData, String Topic) {
+        
 
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;
@@ -110,7 +110,7 @@ public class ReviewData implements Serializable{
 
             });
 
-        }
+        
     }
 
     private String getTokenSpark(String idLandlot, String Topic) {
