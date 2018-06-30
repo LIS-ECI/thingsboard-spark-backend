@@ -50,6 +50,7 @@ public class SparkKafkaStreamingTemperatureMain {
     // The application name
     public static final String APP_NAME = "Kafka Spark Streaming App";
    
+    public static JavaSparkContext sc;
 
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {
@@ -92,7 +93,7 @@ public class SparkKafkaStreamingTemperatureMain {
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
 
-                
+                sc=ssc.sparkContext();
                 stream.foreachRDD(rdd ->
                 {
                     // Map incoming JSON to WindSpeedAndGeoZoneData objects
@@ -106,7 +107,7 @@ public class SparkKafkaStreamingTemperatureMain {
                     List<TemperatureAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new TemperatureAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
 // Push aggregated data to ThingsBoard Asset
                     //restClient.sendTelemetryToAsset(aggData);
-                    reviewData.analizeTelemetry(aggData,Topic,ssc);
+                    reviewData.analizeTelemetry(aggData,Topic);
 
                 });
                 

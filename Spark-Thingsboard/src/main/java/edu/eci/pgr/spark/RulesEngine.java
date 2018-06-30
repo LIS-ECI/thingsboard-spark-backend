@@ -17,7 +17,10 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.springframework.stereotype.Service;
+import org.thingsboard.samples.spark.temperature.SparkKafkaStreamingTemperatureMain;
 
 /**
  *
@@ -26,29 +29,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class RulesEngine implements Serializable{
     
-    private static List<Rule> rules;
-    public static HashMap<String, String> data2;
+    private static JavaRDD<Rule> rules;
 
 
     public RulesEngine() {
-        rules = new ArrayList<>();
-        rules.add(new GotaRule());
-        rules.add(new RuleTests());
-        rules.add(new RuleTests2());
  
     }
+    
 
     public void execute( HashMap<String, String> data) {
-        ExecutorService executorService = Executors.newFixedThreadPool(rules.size());
-        for (Rule r: rules){
-            executorService.submit(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    r.execute(data);
-                    return null;
-                }
-            });
-        }
+        List<Rule> rulesList = new ArrayList<>();
+        rulesList.add(new GotaRule());
+        rulesList.add(new RuleTests());
+        rulesList.add(new RuleTests2());
+        rules=SparkKafkaStreamingTemperatureMain.sc.parallelize(rulesList);
+        rules.foreach(r->r.execute(data));
+                          
     }
+    
 
 }

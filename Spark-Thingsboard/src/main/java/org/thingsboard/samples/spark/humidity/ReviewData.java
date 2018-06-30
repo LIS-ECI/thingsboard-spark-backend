@@ -56,9 +56,9 @@ public class ReviewData implements Serializable{
         mdbs = new MongoDBSpatial();
     }
 
-    public void analizeTelemetry(List<HumidityAndGeoZoneData> aggData, String Topic, JavaStreamingContext sc) throws Exception {
+    public void analizeTelemetry(List<HumidityAndGeoZoneData> aggData, String Topic) throws Exception {
         if (!aggData.isEmpty()) {
-            JavaRDD<HumidityAndGeoZoneData> telemetryData = sc.sparkContext().parallelize(aggData);
+            JavaRDD<HumidityAndGeoZoneData> telemetryData = SparkKafkaStreamingHumidityMain.sc.parallelize(aggData);
 
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;

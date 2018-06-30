@@ -34,7 +34,7 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import scala.Tuple2;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
+import org.apache.spark.api.java.JavaSparkContext;
 
 
 public class SparkKafkaStreamingHumidityMain {
@@ -48,7 +48,7 @@ public class SparkKafkaStreamingHumidityMain {
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
     public static final String APP_NAME = "Kafka Spark Streaming App";
-   
+    public static JavaSparkContext sc;
 
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {
@@ -88,7 +88,7 @@ public class SparkKafkaStreamingHumidityMain {
                                 LocationStrategies.PreferConsistent(),
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
-
+                sc=ssc.sparkContext();
                 stream.foreachRDD(rdd ->
                 {
                     
@@ -103,7 +103,7 @@ public class SparkKafkaStreamingHumidityMain {
                     List<HumidityAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new HumidityAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
 // Push aggregated data to ThingsBoard Asset
                     //restClient.sendTelemetryToAsset(aggData);
-                    reviewData.analizeTelemetry(aggData,Topic,ssc);
+                    reviewData.analizeTelemetry(aggData,Topic);
 
                 });
                 ssc.start();

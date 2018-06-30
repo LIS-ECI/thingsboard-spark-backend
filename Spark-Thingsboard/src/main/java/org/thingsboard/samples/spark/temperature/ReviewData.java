@@ -49,17 +49,19 @@ public class ReviewData implements Serializable{
     //private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
     //private MqttAsyncClient client;
     private MongoDBSpatial mdbs;
-    private RulesEngine rulesEngine;
+    private RulesEngine rulesEngine ;
 
-    ReviewData() {
+    
+    
+    ReviewData( ) {
         mdbs = new MongoDBSpatial();
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        rulesEngine = ac.getBean(RulesEngine.class);
+        rulesEngine= new RulesEngine();
+        //ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
     }
 
-    public void analizeTelemetry(List<TemperatureAndGeoZoneData> aggData, String Topic, JavaStreamingContext sc) {
+    public void analizeTelemetry(List<TemperatureAndGeoZoneData> aggData, String Topic) {
         if (!aggData.isEmpty()) {
-            JavaRDD<TemperatureAndGeoZoneData> telemetryData = sc.sparkContext().parallelize(aggData);
+            JavaRDD<TemperatureAndGeoZoneData> telemetryData = SparkKafkaStreamingTemperatureMain.sc.parallelize(aggData);
 
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;
