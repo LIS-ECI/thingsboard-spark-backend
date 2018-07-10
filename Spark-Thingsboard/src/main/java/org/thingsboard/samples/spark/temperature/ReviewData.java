@@ -103,8 +103,9 @@ public class ReviewData implements Serializable{
                 data2.put("first_time", sdf.format(now));
 
                 String landlot_name = getLandlotNameCassandra(idLandlot);
-                System.out.println("landlot_name: " + landlot_name);
-                if (landlot_name.equals("Papa")) {
+                if (landlot_name!=null) {
+                    System.out.println("landlot_name: " + landlot_name);
+                    data2.put("landlot_name", landlot_name);
                     rulesEngine.execute(data2);
                 }
 

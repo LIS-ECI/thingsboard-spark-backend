@@ -79,7 +79,7 @@ public class SparkKafkaStreamingTemperatureMain {
         }
 
         void start() throws Exception {
-            SparkConf conf = new SparkConf().setAppName(APP_NAME).setMaster("local");
+            SparkConf conf = new SparkConf().setAppName(APP_NAME); //.setMaster("local");
             
 
                 try (JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(STREAM_WINDOW_MILLISECONDS))) {

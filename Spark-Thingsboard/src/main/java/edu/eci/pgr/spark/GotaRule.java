@@ -41,11 +41,15 @@ public class GotaRule extends Rule implements Serializable{
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS");
     private static final double PERCENTAGE = 80;
     private List<Action> actions;
+    private List<String> types_Crops;
+
 
     public GotaRule() {
         actions = new ArrayList<>();
         actions.add(new ActionDroneFique());
         actions.add(new ActionSendAlert());
+        types_Crops= new ArrayList<>();
+        types_Crops.add("Papa");
     }
 
     private String getValueOfRedis(String key, String idLandlot) {

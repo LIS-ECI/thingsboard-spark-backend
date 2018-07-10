@@ -7,6 +7,7 @@ package edu.eci.pgr.spark;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,6 +15,16 @@ import org.springframework.stereotype.Service;
  * @author cristian
  */
 public abstract class Rule  implements Serializable{
+    
+    private List<String> types_Crops;
+
+    public List<String> getTypes_Crops() {
+        return types_Crops;
+    }
+
+    public void setTypes_Crops(List<String> types_Crops) {
+        this.types_Crops = types_Crops;
+    }
 
     private HashMap<String,String> data;
     

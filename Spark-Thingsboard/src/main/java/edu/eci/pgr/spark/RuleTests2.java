@@ -1,11 +1,19 @@
 package edu.eci.pgr.spark;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class RuleTests2  extends Rule implements Serializable{
     
-    public RuleTests2(){}
+    private List<String> types_Crops;
+
+    
+    public RuleTests2(){
+        types_Crops= new ArrayList<>();
+        types_Crops.add("Papa");
+    }
 
     @Override
     public void execute(HashMap<String, String> data) {

@@ -49,13 +49,16 @@ public class RulesEngine implements Serializable{
         Future<Long> future1;
         
         for (Rule r: rules){
-            future1 = executorService.submit(new Callable<Long>() {
+            if (r.getTypes_Crops().contains(data.get("landlot_name"))){
+                future1 = executorService.submit(new Callable<Long>() {
                 @Override
                 public Long call() throws Exception {
                     r.execute(data);
                     return 0l;
                 }
             });
+            }
+            
         }
             
             
