@@ -45,7 +45,7 @@ public abstract class MongoConnection {
             CodecRegistry pojoCodecRegistry = fromRegistries(MongoClient.getDefaultCodecRegistry(),
                     fromProviders(PojoCodecProvider.builder().automatic(true).build()));
             //mongoDatabase = getSession().getDatabase(serverProperties.getMongoDB());
-            mongoDatabase = getSession().getDatabase("prueba").withCodecRegistry(pojoCodecRegistry);
+            mongoDatabase = getSession().getDatabase("pruebacm").withCodecRegistry(pojoCodecRegistry);
         }
         return mongoDatabase;
     }

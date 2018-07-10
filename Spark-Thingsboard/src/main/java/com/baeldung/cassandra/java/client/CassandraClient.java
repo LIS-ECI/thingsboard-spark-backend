@@ -27,7 +27,7 @@ public class CassandraClient {
         KeyspaceRepository sr = new KeyspaceRepository(session);
         sr.useKeyspace("thingsboard");
         LandlotRepository fr= new LandlotRepository(session);
-        Landlot f= fr.selectById("321a7e50-74e5-11e8-9cab-55a210069b83");   
+        Landlot f= fr.selectById("1ffce660-80af-11e8-9659-3fd35edd3cfd");   
         System.out.println("farm: "+f);
         connector.close();
     }
