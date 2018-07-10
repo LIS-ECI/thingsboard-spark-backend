@@ -8,7 +8,6 @@ package edu.eci.pgr.spark;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
-import org.springframework.stereotype.Service;
 
 /**
  *

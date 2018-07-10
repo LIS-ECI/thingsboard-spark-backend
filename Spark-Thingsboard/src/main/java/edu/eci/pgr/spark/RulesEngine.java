@@ -49,6 +49,8 @@ public class RulesEngine implements Serializable{
         Future<Long> future1;
         
         for (Rule r: rules){
+            System.out.println("DATA "+data.get("landlot_name"));
+            System.out.println("rule.get "+r.getTypes_Crops());
             if (r.getTypes_Crops().contains(data.get("landlot_name"))){
                 future1 = executorService.submit(new Callable<Long>() {
                 @Override
