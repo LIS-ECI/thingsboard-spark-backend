@@ -15,7 +15,15 @@ public class RuleTests extends  Rule implements Serializable{
         types_Crops.add("Papa");
     }
     
-    
+    @Override
+    public List<String> getTypes_Crops() {
+        return types_Crops;
+    }
+
+    @Override
+    public void setTypes_Crops(List<String> types_Crops) {
+        this.types_Crops = types_Crops;
+    }
     
     @Override
     public void execute(HashMap<String, String> data) {
