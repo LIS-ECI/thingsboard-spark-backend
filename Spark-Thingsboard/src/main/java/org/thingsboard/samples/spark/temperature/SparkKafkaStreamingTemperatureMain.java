@@ -50,7 +50,7 @@ public class SparkKafkaStreamingTemperatureMain {
     private static final String Topic="temperature";
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
-    public static final String APP_NAME = "Kafka Spark Streaming App";
+    public static final String APP_NAME = "Spark Temperature";
 
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {

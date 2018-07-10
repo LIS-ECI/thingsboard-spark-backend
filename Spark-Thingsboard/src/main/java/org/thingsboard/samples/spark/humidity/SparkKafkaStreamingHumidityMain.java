@@ -48,7 +48,7 @@ public class SparkKafkaStreamingHumidityMain {
     private static final String Topic="humidity";
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
-    public static final String APP_NAME = "Kafka Spark Streaming App";
+    public static final String APP_NAME = "Spark Humidity";
     private static RulesEngine rulesEngine; 
 
     // Misc Kafka client properties

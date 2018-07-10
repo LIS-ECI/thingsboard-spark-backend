@@ -80,7 +80,7 @@ public class ReviewData implements Serializable{
                 //data.1: idlandlot
                 //data.2: telemetry data
                 saveToRedis(Topic, data._1, String.valueOf(data._2));
-
+                System.out.println("Dato de temperatura almacenado en Redis!");
             });
         
     }

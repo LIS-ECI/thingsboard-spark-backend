@@ -12,6 +12,9 @@ import com.baeldung.cassandra.java.client.repository.FarmRepository;
 import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
 import com.baeldung.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
+import com.mycompany.connection.MongoDBException;
+import com.mycompany.connection.MongoDBSpatial;
+import java.util.logging.Level;
 import org.thingsboard.server.common.data.farm.Farm;
 import org.thingsboard.server.common.data.landlot.Landlot;
 
@@ -27,8 +30,19 @@ public class CassandraClient {
         KeyspaceRepository sr = new KeyspaceRepository(session);
         sr.useKeyspace("thingsboard");
         LandlotRepository fr= new LandlotRepository(session);
-        Landlot f= fr.selectById("1ffce660-80af-11e8-9659-3fd35edd3cfd");   
-        System.out.println("farm: "+f);
+        
+        //Landlot f= fr.selectById("1ffce660-80af-11e8-9659-3fd35edd3cfd");   
+        //System.out.println("farm: "+f);
         connector.close();
+        
+        MongoDBSpatial mdbs = new MongoDBSpatial();
+        String idLandlot;
+        try {
+            idLandlot = mdbs.findLandlotsByDeviceId("1ffce660-80af-11e8-9659-3fd35edd3cfd").getId();
+            System.out.println("idLand:" +idLandlot);
+
+        } catch (MongoDBException ex) {
+            java.util.logging.Logger.getLogger(CassandraClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
