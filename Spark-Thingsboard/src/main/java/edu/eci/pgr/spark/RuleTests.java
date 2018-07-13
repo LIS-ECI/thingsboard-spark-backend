@@ -31,7 +31,9 @@ public class RuleTests extends  Rule implements Serializable{
     
     @Override
     public void execute(HashMap<String, String> data) {
+        System.out.println("ENTRO A ML");
         DecisionTreeModel model= SparkKafkaStreamingTemperatureMain.model;
+        System.out.println("model: "+model);
         double[] vector = {15.0,27.0,25.0,3.7,2.0};
         int[] index = {0,1,2,3,4};
         Vector v = new SparseVector(5,index,vector);
