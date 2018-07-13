@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.text.SimpleDateFormat;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 import org.thingsboard.samples.spark.util.JedisUtil;
 import org.thingsboard.server.common.data.landlot.Landlot;
@@ -94,7 +95,7 @@ public class GotaRule extends Rule implements Serializable{
     }
     
     @Override
-    public void execute(HashMap<String, String> data) {
+    public void execute(HashMap<String, String> data,DecisionTreeModel model) {
         System.out.println("entró");
         String idLandlot = data.get("idLandlot");
         RuleAnalysis(idLandlot, data.get("humidityData"), data.get("temperatureData"),data.get("first_time"));

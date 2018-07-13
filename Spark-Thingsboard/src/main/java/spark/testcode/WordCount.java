@@ -185,7 +185,7 @@ public class WordCount {
         String landlot_name = getLandlotNameCassandra(idLandlot);
         System.out.println("landlot_name: "+landlot_name);
         if (landlot_name.equals("Papa")){
-            rulesEngine.execute(data2);
+            //rulesEngine.execute(data2,model);
         }
         
         

@@ -112,7 +112,7 @@ public class SparkKafkaStreamingTemperatureMain {
                     if (!aggData.isEmpty()) {
                         JavaRDD<TemperatureAndGeoZoneData> telemetryData = ssc.sparkContext().parallelize(aggData);
 
-                        reviewData.analizeTelemetry(telemetryData,Topic);
+                        reviewData.analizeTelemetry(telemetryData,Topic,model);
                     }
                     
 

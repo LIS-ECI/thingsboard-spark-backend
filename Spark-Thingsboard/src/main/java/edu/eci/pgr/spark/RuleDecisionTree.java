@@ -9,12 +9,12 @@ import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.thingsboard.samples.spark.temperature.SparkKafkaStreamingTemperatureMain;
 
-public class RuleTests extends  Rule implements Serializable{
+public class RuleDecisionTree extends  Rule implements Serializable{
     
     private List<String> types_Crops;
 
     
-    public RuleTests(){
+    public RuleDecisionTree(){
         types_Crops= new ArrayList<>();
         types_Crops.add("Papa");
     }
@@ -30,9 +30,8 @@ public class RuleTests extends  Rule implements Serializable{
     }
     
     @Override
-    public void execute(HashMap<String, String> data) {
+    public void execute(HashMap<String, String> data,DecisionTreeModel model) {
         System.out.println("ENTRO A ML");
-        DecisionTreeModel model= SparkKafkaStreamingTemperatureMain.model;
         System.out.println("model: "+model);
         double[] vector = {15.0,27.0,25.0,3.7,2.0};
         int[] index = {0,1,2,3,4};

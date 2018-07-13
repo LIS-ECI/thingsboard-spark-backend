@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 public class RuleTests2  extends Rule implements Serializable{
     
@@ -28,16 +29,12 @@ public class RuleTests2  extends Rule implements Serializable{
     }
     
     @Override
-    public void execute(HashMap<String, String> data) {
+    public void execute(HashMap<String, String> data, DecisionTreeModel model) {
         for (String name: data.keySet()){
             String key =name.toString();
             String value = data.get(name).toString();
             System.out.println(key + " " + value+ " "+"hilo2");
         }
-    }
-
-    public void run(){
-        execute(this.getData());
     }
 }
 

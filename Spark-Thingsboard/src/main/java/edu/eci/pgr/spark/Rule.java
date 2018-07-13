@@ -8,6 +8,7 @@ package edu.eci.pgr.spark;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 /**
  *
@@ -16,6 +17,10 @@ import java.util.List;
 public abstract class Rule  implements Serializable{
     
     private List<String> types_Crops;
+    private HashMap<String,String> data;
+    
+    public void execute(HashMap<String,String> data, DecisionTreeModel model){};
+
 
     public List<String> getTypes_Crops() {
         return types_Crops;
@@ -25,15 +30,4 @@ public abstract class Rule  implements Serializable{
         this.types_Crops = types_Crops;
     }
 
-    private HashMap<String,String> data;
-    
-    public void execute(HashMap<String,String> data){};
-
-    public HashMap<String, String> getData() {
-        return data;
-    }
-
-    public void setData(HashMap<String, String> data) {
-        this.data = data;
-    }
 }

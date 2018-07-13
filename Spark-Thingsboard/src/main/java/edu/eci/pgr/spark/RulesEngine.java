@@ -19,6 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.springframework.stereotype.Service;
 import org.thingsboard.samples.spark.temperature.SparkKafkaStreamingTemperatureMain;
@@ -39,12 +40,12 @@ public class RulesEngine implements Serializable{
 
         rules = new ArrayList<>();
         rules.add(new GotaRule());
-        rules.add(new RuleTests());
+        rules.add(new RuleDecisionTree());
         rules.add(new RuleTests2());
     }
     
 
-    public void execute( HashMap<String, String> data) {
+    public void execute( HashMap<String, String> data,DecisionTreeModel model) {
         executorService = Executors.newFixedThreadPool(rules.size());
         Future<Long> future1;
         
@@ -54,7 +55,7 @@ public class RulesEngine implements Serializable{
                 future1 = executorService.submit(new Callable<Long>() {
                 @Override
                 public Long call() throws Exception {
-                    r.execute(data);
+                    r.execute(data,model);
                     return 0l;
                 }
             });

@@ -25,6 +25,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -60,7 +61,7 @@ public class ReviewData implements Serializable{
         //ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
     }
 
-    public void analizeTelemetry(JavaRDD<TemperatureAndGeoZoneData> telemetryData, String Topic) {
+    public void analizeTelemetry(JavaRDD<TemperatureAndGeoZoneData> telemetryData, String Topic,DecisionTreeModel model) {
         
 
             //Convertir a un map(idlandlot, list<Integer>)
@@ -106,7 +107,7 @@ public class ReviewData implements Serializable{
                 if (landlot_name!=null) {
                     System.out.println("landlot_name: " + landlot_name);
                     data2.put("landlot_name", landlot_name);
-                    rulesEngine.execute(data2);
+                    rulesEngine.execute(data2,model);
                 }
 
             });
