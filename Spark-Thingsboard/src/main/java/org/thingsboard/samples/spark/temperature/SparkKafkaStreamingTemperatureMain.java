@@ -38,6 +38,7 @@ import scala.Tuple2;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 
 public class SparkKafkaStreamingTemperatureMain {
@@ -51,7 +52,7 @@ public class SparkKafkaStreamingTemperatureMain {
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
     public static final String APP_NAME = "Spark Temperature";
-
+    public static DecisionTreeModel model;
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {
         Map<String, Object> kafkaParams = new HashMap<>();
@@ -92,6 +93,8 @@ public class SparkKafkaStreamingTemperatureMain {
                                 LocationStrategies.PreferConsistent(),
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
+                
+                model = DecisionTreeModel.load(ssc.sparkContext().sc(), "/home/pgr/decision_tree/SparkModeloClasificacion");
                 
                 stream.foreachRDD(rdd ->
                 {

@@ -4,6 +4,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.spark.mllib.linalg.SparseVector;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
+import org.thingsboard.samples.spark.temperature.SparkKafkaStreamingTemperatureMain;
 
 public class RuleTests extends  Rule implements Serializable{
     
@@ -27,14 +31,12 @@ public class RuleTests extends  Rule implements Serializable{
     
     @Override
     public void execute(HashMap<String, String> data) {
-        for (String name: data.keySet()){
-            String key =name.toString();
-            String value = data.get(name).toString();
-            System.out.println(key + " " + value+"hilo1 ");
-        }
+        DecisionTreeModel model= SparkKafkaStreamingTemperatureMain.model;
+        double[] vector = {15.0,27.0,25.0,3.7,2.0};
+        int[] index = {0,1,2,3,4};
+        Vector v = new SparseVector(5,index,vector);
+        System.out.println("El modelo predijo que: "+  model.predict(v));
     }
 
-    public void run(){
-        execute(this.getData());
-    }
+
 }
