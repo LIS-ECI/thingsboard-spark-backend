@@ -34,6 +34,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.thingsboard.samples.spark.util.ExternalMethods;
 import org.thingsboard.samples.spark.util.JedisUtil;
 import org.thingsboard.server.common.data.landlot.Landlot;
 import redis.clients.jedis.Jedis;
@@ -48,18 +49,9 @@ import scala.Tuple2;
 @Slf4j
 public class ReviewData implements Serializable{
 
-    //private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
-    //private MqttAsyncClient client;
-    private MongoDBSpatial mdbs;
     private static RulesEngine rulesEngine = new RulesEngine();
 
-
-    
-    
-    ReviewData( ) {
-        mdbs = new MongoDBSpatial();
-        //ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-    }
+    ReviewData( ) {}
 
     public void analizeTelemetry(JavaRDD<TemperatureAndGeoZoneData> telemetryData, String Topic,DecisionTreeModel model) {
         
@@ -67,7 +59,7 @@ public class ReviewData implements Serializable{
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;
             hmap = telemetryData.mapToPair((TemperatureAndGeoZoneData telemetryData1) -> {
-                String idLandlot = mdbs.findLandlotsByDeviceId(telemetryData1.getDeviceId()).getId();
+                String idLandlot = ExternalMethods.getMdbs().findLandlotsByDeviceId(telemetryData1.getDeviceId()).getId();
                 return new Tuple2(idLandlot, telemetryData1.getTemperature());
             });
 
@@ -86,10 +78,10 @@ public class ReviewData implements Serializable{
                 System.out.println("Key=" + data._1() + " Average=" + data._2());
                 String idLandlot = data._1();
                 double temperatureData = data._2();
-                String token = getTokenSpark(idLandlot, Topic);
+                String token = ExternalMethods.getTokenSpark(idLandlot, Topic);
 
                 //review enfermedades
-                String temphumi = getValueOfRedis("humidity", idLandlot);
+                String temphumi = ExternalMethods.getValueOfRedis("humidity", idLandlot);
                 Double humidityData = 0.0;
                 if (temphumi != null) {
                     humidityData = Double.parseDouble(temphumi);
@@ -103,7 +95,7 @@ public class ReviewData implements Serializable{
                 Date now = new Date();
                 data2.put("first_time", sdf.format(now));
 
-                String landlot_name = getLandlotNameCassandra(idLandlot);
+                String landlot_name = ExternalMethods.getLandlotNameCassandra(idLandlot);
                 if (landlot_name!=null) {
                     System.out.println("landlot_name: " + landlot_name);
                     data2.put("landlot_name", landlot_name);
@@ -115,46 +107,6 @@ public class ReviewData implements Serializable{
         
     }
 
-    private String getTokenSpark(String idLandlot, String Topic) {
-        String token = null;
-        try {
-            token = mdbs.getTokenByIdLandlotTopic(idLandlot, Topic);
-        } catch (MongoDBException ex) {
-            Logger.getLogger(ReviewData.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return token;
-    }
-
-    private String getLandlotNameCassandra(String idLandlot) {
-        CassandraConnector connector = new CassandraConnector();
-        connector.connect("10.8.0.19", null);
-        Session session = connector.getSession();
-        KeyspaceRepository sr = new KeyspaceRepository(session);
-        sr.useKeyspace("thingsboard");
-        LandlotRepository pr = new LandlotRepository(session);
-        System.out.println("LANDLOT " + idLandlot);
-        Landlot p = pr.selectById(idLandlot);
-        return p.getCrop().getName();
-    }
-
-    private String getValueOfRedis(String key, String idLandlot) {
-        boolean funciono = true;
-        String content = "";
-        while (funciono) {
-            Jedis jedis = JedisUtil.getPool().getResource();
-            jedis.watch(key + idLandlot);
-            Transaction t = jedis.multi();
-            Response<String> valor = t.get(key + idLandlot);
-
-            List<Object> res = t.exec();
-            if (res.size() > 0) {
-                funciono = false;
-                content = valor.get();
-                jedis.close();
-            }
-        }
-        return content;
-    }
     private static PairFunction<Tuple2<String, Tuple2<Double, Double>>, String, Double> getAverageByKey = (tuple) -> {
         Tuple2<Double, Double> val = tuple._2;
         double total = val._1;

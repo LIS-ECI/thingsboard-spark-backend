@@ -5,11 +5,6 @@
  */
 package edu.eci.pgr.spark;
 
-import com.baeldung.cassandra.java.client.CassandraConnector;
-import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
-import com.baeldung.cassandra.java.client.repository.LandlotRepository;
-import com.datastax.driver.core.Session;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,12 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.text.SimpleDateFormat;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
-
-import org.thingsboard.samples.spark.util.JedisUtil;
-import org.thingsboard.server.common.data.landlot.Landlot;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Response;
-import redis.clients.jedis.Transaction;
+import org.thingsboard.samples.spark.util.ExternalMethods;
 
 /**
  *
@@ -62,37 +52,6 @@ public class GotaRule extends Rule implements Serializable{
     public void setTypes_Crops(List<String> types_Crops) {
         this.types_Crops = types_Crops;
     }
-
-    private String getValueOfRedis(String key, String idLandlot) {
-        boolean funciono = true;
-        String content = "";
-        while (funciono) {
-            Jedis jedis = JedisUtil.getPool().getResource();
-            jedis.watch(key + idLandlot);
-            Transaction t = jedis.multi();
-            Response<String> valor = t.get(key + idLandlot);
-
-            List<Object> res = t.exec();
-            if (res.size() > 0) {
-                funciono = false;
-                content = valor.get();
-                jedis.close();
-            }
-        }
-        return content;
-    }
-
-    
-    private String getLandlotNameCassandra(String idLandlot) {
-        CassandraConnector connector = new CassandraConnector();
-        connector.connect("10.8.0.19", null);
-        Session session = connector.getSession();
-        KeyspaceRepository sr = new KeyspaceRepository(session);
-        sr.useKeyspace("thingsboard");
-        LandlotRepository pr = new LandlotRepository(session);
-        Landlot p = pr.selectById(idLandlot);
-        return p.getCrop().getName();
-    }
     
     @Override
     public void execute(HashMap<String, String> data,DecisionTreeModel model) {
@@ -105,13 +64,13 @@ public class GotaRule extends Rule implements Serializable{
         
         Date now = new Date();
         long now_long = now.getTime();     
-        String analysisString = getValueOfRedis("analysisString", idLandlot);
-        String analysisValue = getValueOfRedis("analysisValue", idLandlot);
-        String start_time = getValueOfRedis("start_time", idLandlot);
+        String analysisString = ExternalMethods.getValueOfRedis("analysisString", idLandlot);
+        String analysisValue = ExternalMethods.getValueOfRedis("analysisValue", idLandlot);
+        String start_time = ExternalMethods.getValueOfRedis("start_time", idLandlot);
         System.out.println("STARTTIME :O"+ start_time);
         String condition="-"; 
         int value=0;
-        String landlot_name = getLandlotNameCassandra(idLandlot);
+        String landlot_name = ExternalMethods.getLandlotNameCassandra(idLandlot);
         //Mirar si cumple la condición
         if (landlot_name.equals("Papa") && Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
             condition="+";
@@ -122,7 +81,7 @@ public class GotaRule extends Rule implements Serializable{
                 analysisString = condition;
                 analysisValue = String.valueOf(value);
                 //Inicializar fecha
-                saveToRedis("start_time", idLandlot, String.valueOf(now_long));
+                ExternalMethods.saveToRedis("start_time", idLandlot, String.valueOf(now_long));
                 start_time=String.valueOf(now_long);
 
             } //Si se cumplieron las 11 horas
@@ -144,29 +103,29 @@ public class GotaRule extends Rule implements Serializable{
 
                     //Si estoy en el dia 1 
                     if (now_long - Double.parseDouble(start_time) < TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR) {
-                        String warning = getValueOfRedis("Warning", idLandlot);
+                        String warning = ExternalMethods.getValueOfRedis("Warning", idLandlot);
                         //hay un warning?
                         //si --> no hacer nada
                         //no --> agregar
                         if (warning == null || warning.equals("-")) {
-                            saveToRedis("Warning", idLandlot, "+");
+                            ExternalMethods.saveToRedis("Warning", idLandlot, "+");
                         }
                     }
 
                     if (now_long - Double.parseDouble(start_time) > TIME_DAY_MILISECONDS + STREAM_WINDOW_MILLISECONDS*2 ) {
-                        String warning = getValueOfRedis("Warning", idLandlot);
+                        String warning = ExternalMethods.getValueOfRedis("Warning", idLandlot);
                         //Por ser dia 2 apenas se cumplan las horas es porque hay alarma
                         //ALARMA
                         for (Action ac : actions) {
                             ac.setIdLandlot(idLandlot);
                             ac.execute();
                         }
-                        saveToRedis("Warning", idLandlot, "-");
+                        ExternalMethods.saveToRedis("Warning", idLandlot, "-");
                         analysisString = "";
                         analysisValue = "0";
                         now = new Date();
                         now_long = now.getTime();
-                        saveToRedis("start_time", idLandlot, String.valueOf(now_long));
+                        ExternalMethods.saveToRedis("start_time", idLandlot, String.valueOf(now_long));
                     }
 
                 }
@@ -179,9 +138,9 @@ public class GotaRule extends Rule implements Serializable{
 
             //Si no cumple la condición (humedad)
 
-        saveToRedis("analysisString", idLandlot, analysisString);
-        saveToRedis("analysisValue", idLandlot, analysisValue);
-        String warning = getValueOfRedis("Warning", idLandlot);
+        ExternalMethods.saveToRedis("analysisString", idLandlot, analysisString);
+        ExternalMethods.saveToRedis("analysisValue", idLandlot, analysisValue);
+        String warning = ExternalMethods.getValueOfRedis("Warning", idLandlot);
         System.out.println("start_time :o "+start_time);
         //SI es el primer dia
         boolean day1=(TIME_DAY_MILISECONDS - TIME_DAY_MILISECONDS_ERROR)< (now_long - Double.parseDouble(start_time)) && (now_long - Double.parseDouble(start_time)) < (TIME_DAY_MILISECONDS + TIME_DAY_MILISECONDS_ERROR);
@@ -189,16 +148,16 @@ public class GotaRule extends Rule implements Serializable{
         if (day1){
             if (warning == null || warning.equals("-")) {
             //si no hubo alarma reiniciar
-            saveToRedis("start_time", idLandlot, String.valueOf(now_long));
+            ExternalMethods.saveToRedis("start_time", idLandlot, String.valueOf(now_long));
             }
-            saveToRedis("analysisString", idLandlot, "");
-            saveToRedis("analysisValue", idLandlot, "0");
+            ExternalMethods.saveToRedis("analysisString", idLandlot, "");
+            ExternalMethods.saveToRedis("analysisValue", idLandlot, "0");
         } 
         if (day2){
-            saveToRedis("Warning", idLandlot, "-");
-            saveToRedis("start_time", idLandlot, String.valueOf(now_long));
-            saveToRedis("analysisString", idLandlot, "");
-            saveToRedis("analysisValue", idLandlot, "0");
+            ExternalMethods.saveToRedis("Warning", idLandlot, "-");
+            ExternalMethods.saveToRedis("start_time", idLandlot, String.valueOf(now_long));
+            ExternalMethods.saveToRedis("analysisString", idLandlot, "");
+            ExternalMethods.saveToRedis("analysisValue", idLandlot, "0");
         }
                  
         File file = new File("DatosPGR1.csv");
@@ -217,13 +176,6 @@ public class GotaRule extends Rule implements Serializable{
    }
 
 
-    private void saveToRedis(String key, String idLandlot, String data) {
-        Jedis jedis = JedisUtil.getPool().getResource();
-        jedis.watch(key + idLandlot);
-        Transaction t2 = jedis.multi();
-        t2.set(key + idLandlot, data);
-        t2.exec();
-        jedis.close();
-    }
+  
 
 }

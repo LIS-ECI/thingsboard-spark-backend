@@ -58,15 +58,7 @@ public class ActionSendAlert implements Action,Serializable {
 
     }
 
-    private String getTokenSpark(String idLandlot, String Topic) {
-        String token = null;
-        try {
-            token = mdbs.getTokenByIdLandlotTopic(idLandlot, Topic);
-        } catch (MongoDBException ex) {
-            Logger.getLogger(ActionSendAlert.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return token;
-    }
+  
 
     @Override
     public void execute() {
@@ -101,19 +93,6 @@ public class ActionSendAlert implements Action,Serializable {
 
     }
 
-    private IMqttActionListener getCallback() {
-        return new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-                log.info("Telemetry data updated!");
-            }
-
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                log.error("Telemetry data update failed!", exception);
-            }
-        };
-    }
 
     /**
      * @return the idLandlot

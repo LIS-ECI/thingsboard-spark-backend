@@ -35,6 +35,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 import org.thingsboard.samples.spark.temperature.TemperatureAndGeoZoneData;
+import org.thingsboard.samples.spark.util.ExternalMethods;
 import org.thingsboard.samples.spark.util.JedisUtil;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
@@ -47,23 +48,14 @@ import scala.Tuple2;
 @Slf4j
 public class ReviewData implements Serializable{
 
-    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
-    private static final String TOPIC_TO_THINGSBOARD = "HumidityAvg";
-
-    private MqttAsyncClient client;
-    private MongoDBSpatial mdbs;
-
-    ReviewData() throws MqttException {
-        mdbs = new MongoDBSpatial();
-    }
+    ReviewData() {}
 
     public void analizeTelemetry(JavaRDD<HumidityAndGeoZoneData> telemetryData, String Topic,RulesEngine rulesEngine) throws Exception {
         
-
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;
             hmap = telemetryData.mapToPair((HumidityAndGeoZoneData telemetryData1) -> {
-                String idLandlot = mdbs.findLandlotsByDeviceId(telemetryData1.getDeviceId()).getId();
+                String idLandlot = ExternalMethods.getMdbs().findLandlotsByDeviceId(telemetryData1.getDeviceId()).getId();
                 return new Tuple2(idLandlot, telemetryData1.getHumidity());
             });
 
@@ -79,20 +71,12 @@ public class ReviewData implements Serializable{
             averagePair.foreach(data -> {
                 //data.1: idlandlot
                 //data.2: telemetry data
-                saveToRedis(Topic, data._1, String.valueOf(data._2));
+                ExternalMethods.saveToRedis(Topic, data._1, String.valueOf(data._2));
                 System.out.println("Dato de temperatura almacenado en Redis!");
             });
         
     }
 
-    private void saveToRedis(String key, String idLandlot, String data) {
-        Jedis jedis = JedisUtil.getPool().getResource();
-        jedis.watch(key + idLandlot);
-        Transaction t2 = jedis.multi();
-        t2.set(key + idLandlot, data);
-        t2.exec();
-        jedis.close();
-    }
 
     private static PairFunction<Tuple2<String, Tuple2<Double, Double>>, String, Double> getAverageByKey = (tuple) -> {
         Tuple2<Double, Double> val = tuple._2;
