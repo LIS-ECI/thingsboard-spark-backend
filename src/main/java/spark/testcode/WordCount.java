@@ -1,9 +1,9 @@
 package spark.testcode;
 
 
-import com.baeldung.cassandra.java.client.CassandraConnector;
-import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
-import com.baeldung.cassandra.java.client.repository.LandlotRepository;
+import edu.eci.pgr.cassandra.java.client.connector.CassandraConnector;
+import edu.eci.pgr.cassandra.java.client.repository.KeyspaceRepository;
+import edu.eci.pgr.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;

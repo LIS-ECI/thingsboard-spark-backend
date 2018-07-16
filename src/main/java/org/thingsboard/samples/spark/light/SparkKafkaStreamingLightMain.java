@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.samples.spark.temperature;
+package org.thingsboard.samples.spark.light;
 
+import org.thingsboard.samples.spark.humidity.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.eci.pgr.spark.rules.Rule;
 import edu.eci.pgr.spark.RulesEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -36,23 +36,22 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import scala.Tuple2;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 
-public class SparkKafkaStreamingTemperatureMain {
+public class SparkKafkaStreamingLightMain {
 
     // Kafka brokers URL for Spark Streaming to connect and fetched messages from.
     private static final String KAFKA_BROKER_LIST = "10.8.0.18:9092";
     // Time interval in milliseconds of Spark Streaming Job, 10 seconds by default.
     private static final int STREAM_WINDOW_MILLISECONDS = 5000; // 5 seconds
     // Kafka telemetry topic to subscribe to. This should match to the topic in the rule action.
-    private static final String Topic="temperature";
+    private static final String Topic="light";
     private static final Collection<String> TOPICS = Arrays.asList(Topic);
     // The application name
-    public static final String APP_NAME = "Spark Temperature";
-    public static DecisionTreeModel model;
+    public static final String APP_NAME = "Spark Light";
+    private static RulesEngine rulesEngine; 
+
     // Misc Kafka client properties
     private static Map<String, Object> getKafkaParams() {
         Map<String, Object> kafkaParams = new HashMap<>();
@@ -73,8 +72,10 @@ public class SparkKafkaStreamingTemperatureMain {
     private static class StreamRunner {
 
         private ReviewData reviewData;
+
         StreamRunner() throws Exception {
             //restClient = new RestClient();
+            rulesEngine= new RulesEngine();
             reviewData = new ReviewData();
             
         }
@@ -82,42 +83,34 @@ public class SparkKafkaStreamingTemperatureMain {
         void start() throws Exception {
             SparkConf conf = new SparkConf().setAppName(APP_NAME); //.setMaster("local");
             
-
                 try (JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(STREAM_WINDOW_MILLISECONDS))) {
 
-                 
-                    
                 JavaInputDStream<ConsumerRecord<String, String>> stream =
                         KafkaUtils.createDirectStream(
                                 ssc,
                                 LocationStrategies.PreferConsistent(),
                                 ConsumerStrategies.<String, String>Subscribe(TOPICS, getKafkaParams())
                         );
-                
-                model = DecisionTreeModel.load(ssc.sparkContext().sc(), "/home/pgr/decision_tree/SparkModeloClasificacion");
-                
                 stream.foreachRDD(rdd ->
                 {
-                    // Map incoming JSON to WindSpeedAndGeoZoneData objects
-                    JavaRDD<TemperatureAndGeoZoneData> windRdd = rdd.map(new TemperatureStationDataMapper());
-                    // Map WindSpeedAndGeoZoneData objects by DeviceID
-
-                    JavaPairRDD<String, AvgTemperatureData> temperatureByZoneRdd = windRdd.mapToPair(d -> new Tuple2<>(d.getDeviceId(), new AvgTemperatureData(d.getTemperature())));                    
-// Reduce all data volume by GeoZone key
-                    temperatureByZoneRdd = temperatureByZoneRdd.reduceByKey((a, b) -> AvgTemperatureData.sum(a, b));
-                    // Map <GeoZone, AvgWindSpeedData> back to WindSpeedAndGeoZoneData
-                    List<TemperatureAndGeoZoneData> aggData = temperatureByZoneRdd.map(t -> new TemperatureAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
-// Push aggregated data to ThingsBoard Asset
-                    //restClient.sendTelemetryToAsset(aggData);
-                    if (!aggData.isEmpty()) {
-                        JavaRDD<TemperatureAndGeoZoneData> telemetryData = ssc.sparkContext().parallelize(aggData);
-
-                        reviewData.analizeTelemetry(telemetryData,Topic,model);
-                    }
                     
+                    // Map incoming JSON to LightAndGeoZoneData objects
+                    JavaRDD<LightAndGeoZoneData> lightRdd = rdd.map(new LightStationDataMapper());
+                    // Map WindSpeedAndGeoZoneData objects by GeoZone
 
+                    JavaPairRDD<String, AvgLightData> lightByZoneRdd = lightRdd.mapToPair(d -> new Tuple2<>(d.getDeviceId(), new AvgLightData(d.getLight())));                    
+                    // Reduce all data volume by GeoZone key
+                    lightByZoneRdd = lightByZoneRdd.reduceByKey((a, b) -> AvgLightData.sum(a, b));
+                    // Map <GeoZone, AvgWindSpeedData> back to WindSpeedAndGeoZoneData
+                    List<LightAndGeoZoneData> aggData = lightByZoneRdd.map(t -> new LightAndGeoZoneData(t._1, t._2.getAvgValue(),t._2.getCount())).collect();                    
+                    // Push aggregated data to ThingsBoard Asset
+                    //restClient.sendTelemetryToAsset(aggData);
+                   if (!aggData.isEmpty()) {
+                        JavaRDD<LightAndGeoZoneData> telemetryData = ssc.sparkContext().parallelize(aggData);
+                        reviewData.analizeTelemetry(telemetryData,Topic,rulesEngine);
+                   }
+                    
                 });
-                
                 ssc.start();
                 ssc.awaitTermination();
             }
@@ -137,12 +130,12 @@ public class SparkKafkaStreamingTemperatureMain {
             };
         }
         
-        private static class TemperatureStationDataMapper implements Function<ConsumerRecord<String, String>, TemperatureAndGeoZoneData> {
+        private static class LightStationDataMapper implements Function<ConsumerRecord<String, String>, LightAndGeoZoneData> {
             private static final ObjectMapper mapper = new ObjectMapper();
 
             @Override
-            public TemperatureAndGeoZoneData call(ConsumerRecord<String, String> record) throws Exception {
-                return mapper.readValue(record.value(), TemperatureAndGeoZoneData.class);
+            public LightAndGeoZoneData call(ConsumerRecord<String, String> record) throws Exception {
+                return mapper.readValue(record.value(), LightAndGeoZoneData.class);
             }
         }
     }

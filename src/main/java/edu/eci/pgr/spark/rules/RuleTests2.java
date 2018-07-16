@@ -1,4 +1,4 @@
-package edu.eci.pgr.spark;
+package edu.eci.pgr.spark.rules;
 
 import java.io.Serializable;
 import java.util.ArrayList;

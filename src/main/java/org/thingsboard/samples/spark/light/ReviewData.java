@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.thingsboard.samples.spark.humidity;
+package org.thingsboard.samples.spark.light;
 
+import org.thingsboard.samples.spark.humidity.*;
 import edu.eci.pgr.cassandra.java.client.repository.LandlotRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,13 +51,13 @@ public class ReviewData implements Serializable{
 
     ReviewData() {}
 
-    public void analizeTelemetry(JavaRDD<HumidityAndGeoZoneData> telemetryData, String Topic,RulesEngine rulesEngine) throws Exception {
+    public void analizeTelemetry(JavaRDD<LightAndGeoZoneData> telemetryData, String Topic,RulesEngine rulesEngine) throws Exception {
         
             //Convertir a un map(idlandlot, list<Integer>)
             JavaPairRDD<String, Double> hmap;
-            hmap = telemetryData.mapToPair((HumidityAndGeoZoneData telemetryData1) -> {
+            hmap = telemetryData.mapToPair((LightAndGeoZoneData telemetryData1) -> {
                 String idLandlot = ExternalMethods.getMdbs().findLandlotsByDeviceId(telemetryData1.getDeviceId()).getId();
-                return new Tuple2(idLandlot, telemetryData1.getHumidity());
+                return new Tuple2(idLandlot, telemetryData1.getLight());
             });
 
             List<Tuple2<String, Double>> hmap2 = hmap.collect();

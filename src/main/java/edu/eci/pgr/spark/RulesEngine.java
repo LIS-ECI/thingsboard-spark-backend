@@ -5,6 +5,10 @@
  */
 package edu.eci.pgr.spark;
 
+import edu.eci.pgr.spark.rules.RuleTests2;
+import edu.eci.pgr.spark.rules.RuleDecisionTree;
+import edu.eci.pgr.spark.rules.GotaRule;
+import edu.eci.pgr.spark.rules.Rule;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +37,6 @@ public class RulesEngine implements Serializable{
     
     private List<Rule> rules;
     private ExecutorService executorService;
-
 
 
     public RulesEngine() {

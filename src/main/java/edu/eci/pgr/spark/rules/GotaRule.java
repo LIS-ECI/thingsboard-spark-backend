@@ -3,8 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package edu.eci.pgr.spark;
+package edu.eci.pgr.spark.rules;
 
+import edu.eci.pgr.spark.actions.ActionDroneFique;
+import edu.eci.pgr.spark.actions.ActionSendAlert;
+import edu.eci.pgr.spark.actions.Action;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -70,9 +73,8 @@ public class GotaRule extends Rule implements Serializable{
         System.out.println("STARTTIME :O"+ start_time);
         String condition="-"; 
         int value=0;
-        String landlot_name = ExternalMethods.getLandlotNameCassandra(idLandlot);
         //Mirar si cumple la condición
-        if (landlot_name.equals("Papa") && Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
+        if (Double.parseDouble(humidityData) >= 90 && Double.parseDouble(temperatureData) >= 10) {
             condition="+";
             value=1;
         }

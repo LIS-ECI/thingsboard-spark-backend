@@ -3,14 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.baeldung.cassandra.java.client;
+package edu.eci.pgr.cassandra.java.client.connector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.baeldung.cassandra.java.client.repository.FarmRepository;
-import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
-import com.baeldung.cassandra.java.client.repository.LandlotRepository;
+import edu.eci.pgr.cassandra.java.client.repository.FarmRepository;
+import edu.eci.pgr.cassandra.java.client.repository.KeyspaceRepository;
+import edu.eci.pgr.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;

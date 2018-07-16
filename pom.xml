@@ -232,7 +232,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>make-assembly1</id>
+                        <id>make-assembly-humidity</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -253,7 +253,7 @@
 
                    
                     <execution>
-                        <id>make-assembly3</id>
+                        <id>make-assembly-temperature</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -271,6 +271,27 @@
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
+                    
+                    <execution>
+                        <id>make-assembly-light</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>org.thingsboard.samples.spark.temperature.SparkKafkaStreamingLightMain</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <finalName>Spark-Light-KafkaStreaming</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                    </execution>
+                    
                 </executions>
             </plugin>
         </plugins>

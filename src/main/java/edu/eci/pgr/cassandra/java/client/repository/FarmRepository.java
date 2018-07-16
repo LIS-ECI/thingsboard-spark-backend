@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.baeldung.cassandra.java.client.repository;
+package edu.eci.pgr.cassandra.java.client.repository;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -33,18 +33,13 @@ public class FarmRepository {
         StringBuilder sb = new StringBuilder("SELECT * FROM ").append(TABLE_NAME).append(" WHERE id = ").append(farmId).append(";");
         final String query = sb.toString();
         System.out.println(query+" stringbouild");
-
-
         ResultSet rs = session.execute(query);
-
         System.out.println("result "+rs.toString());
         Farm farm=null;
-
         for (Row r : rs) {
             farm= new Farm(r.getString("name"),r.getString("type"),r.getString("dashboard_id"),r.getString("location_description"),r.getString("farm_details"),r.getString("home_details"),r.getString("farm_enviroment"),r.getString("total_area"),r.getString("irrigations_systems"));
         }
         System.out.println("farm:" +farm);
-
         return farm;
     }
     

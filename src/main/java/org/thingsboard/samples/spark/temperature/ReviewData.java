@@ -5,13 +5,13 @@
  */
 package org.thingsboard.samples.spark.temperature;
 
-import com.baeldung.cassandra.java.client.CassandraConnector;
-import com.baeldung.cassandra.java.client.repository.KeyspaceRepository;
-import com.baeldung.cassandra.java.client.repository.LandlotRepository;
+import edu.eci.pgr.cassandra.java.client.connector.CassandraConnector;
+import edu.eci.pgr.cassandra.java.client.repository.KeyspaceRepository;
+import edu.eci.pgr.cassandra.java.client.repository.LandlotRepository;
 import com.datastax.driver.core.Session;
 import com.mycompany.connection.MongoDBException;
 import com.mycompany.connection.MongoDBSpatial;
-import edu.eci.pgr.spark.Rule;
+import edu.eci.pgr.spark.rules.Rule;
 import edu.eci.pgr.spark.RulesEngine;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -80,26 +80,34 @@ public class ReviewData implements Serializable{
                 double temperatureData = data._2();
                 String token = ExternalMethods.getTokenSpark(idLandlot, Topic);
 
-                //review enfermedades
+                //Get data of the other applications
                 String temphumi = ExternalMethods.getValueOfRedis("humidity", idLandlot);
                 Double humidityData = 0.0;
                 if (temphumi != null) {
                     humidityData = Double.parseDouble(temphumi);
                 }
+                
+                
+                String templight = ExternalMethods.getValueOfRedis("light", idLandlot);
+                Double lightyData = 0.0;
+                if (templight != null) {
+                    lightyData = Double.parseDouble(templight);
+                }
 
-                HashMap<String, String> data2 = new HashMap<>();
-                data2.put("humidityData", String.valueOf(humidityData));
-                data2.put("temperatureData", String.valueOf(temperatureData));
-                data2.put("idLandlot", idLandlot);
+                HashMap<String, String> dataApplications = new HashMap<>();
+                dataApplications.put("humidityData", String.valueOf(humidityData));
+                dataApplications.put("temperatureData", String.valueOf(temperatureData));
+                dataApplications.put("lightData", String.valueOf(lightyData));
+                dataApplications.put("idLandlot", idLandlot);
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS");
                 Date now = new Date();
-                data2.put("first_time", sdf.format(now));
+                dataApplications.put("first_time", sdf.format(now));
 
-                String landlot_name = ExternalMethods.getLandlotNameCassandra(idLandlot);
+                String landlot_name = ExternalMethods.getCropNameCassandra(idLandlot);
                 if (landlot_name!=null) {
                     System.out.println("landlot_name: " + landlot_name);
-                    data2.put("landlot_name", landlot_name);
-                    rulesEngine.execute(data2,model);
+                    dataApplications.put("landlot_name", landlot_name);
+                    rulesEngine.execute(dataApplications,model);
                 }
 
             });
@@ -114,26 +122,5 @@ public class ReviewData implements Serializable{
         Tuple2<String, Double> averagePair = new Tuple2<String, Double>(tuple._1, total / count);
         return averagePair;
     };
-/*
-    public void connectToThingsboard(String token) throws Exception {
-        client = new MqttAsyncClient(THINGSBOARD_MQTT_ENDPOINT, MqttAsyncClient.generateClientId());
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setUserName(token);
-        try {
-            client.connect(options, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken iMqttToken) {
-                    log.info("Connected to Thingsboard!");
-                }
 
-                @Override
-                public void onFailure(IMqttToken iMqttToken, Throwable e) {
-                    log.error("Failed to connect to Thingsboard!", e);
-                }
-            }).waitForCompletion();
-        } catch (MqttException e) {
-            log.error("Failed to connect to the server", e);
-        }
-
-    }*/
 }

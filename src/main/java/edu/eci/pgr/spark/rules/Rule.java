@@ -3,12 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package edu.eci.pgr.spark;
+package edu.eci.pgr.spark.rules;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
+import org.thingsboard.server.common.data.crop.Action;
 
 /**
  *
@@ -17,8 +18,7 @@ import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 public abstract class Rule  implements Serializable{
     
     private List<String> types_Crops;
-    private HashMap<String,String> data;
-    
+    private List<Action> actions;
     public void execute(HashMap<String,String> data, DecisionTreeModel model){};
 
 
