@@ -132,7 +132,6 @@ public class ExternalMethods implements Serializable {
                         ObjectNode values = dataUrg.put(key, value);
                         MqttMessage dataMsg2 = new MqttMessage(mapper.writeValueAsString(dataUrg).getBytes(StandardCharsets.UTF_8));
                         client.publish("v1/devices/me/telemetry", dataMsg2, null, getCallback());
-                        client.disconnect();
                     } catch (MqttException ex) {
                         Logger.getLogger(ExternalMethods.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (JsonProcessingException ex) {
