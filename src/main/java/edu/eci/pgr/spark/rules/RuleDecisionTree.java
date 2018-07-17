@@ -50,7 +50,9 @@ public class RuleDecisionTree extends  Rule implements Serializable{
         int[] index = {0,1,2};
         Vector v = new SparseVector(3,index,vector);
         System.out.println("El modelo predijo que: "+  model.predict(v));
+        String idLandlot= data.get("idLandlot");
         actions.forEach((a) -> {
+            a.setIdLandlot(idLandlot);
             a.execute();
         });
     }

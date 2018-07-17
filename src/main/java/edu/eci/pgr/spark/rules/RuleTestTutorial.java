@@ -48,6 +48,7 @@ public class RuleTestTutorial extends Rule implements Serializable{
         String cropName = ExternalMethods.getCropNameCassandra(idLandlot);
         System.out.println("This is the crop name!: "+cropName);     
         actions.forEach((a) -> {
+            a.setIdLandlot(idLandlot);
             a.execute();
         });
     } 
