@@ -37,24 +37,25 @@ public class RuleDecisionTree extends  Rule implements Serializable{
     
     @Override
     public void execute(HashMap<String, String> data,DecisionTreeModel model) {
-        System.out.println("ENTRO A ML");
-        System.out.println("model: "+model);
+        System.out.println("Executing Decision Tree ML");
         double temperature= Double.parseDouble(data.get("temperatureData"));
-        System.out.println("VALOR MODEL TEMP: "+temperature);
         double humidity = Double.parseDouble(data.get("humidityData")); 
-        System.out.println("VALOR MODEL HUMI: "+humidity);
         double light = Double.parseDouble(data.get("lightData"));
-        System.out.println("VALORES temperature: "+temperature+" humidity "+humidity+" light "+light);
         double[] vector = {temperature,humidity,light};
-        System.out.println("CREO EL VECTOR");
         int[] index = {0,1,2};
         Vector v = new SparseVector(3,index,vector);
-        System.out.println("El modelo predijo que: "+  model.predict(v));
-        String idLandlot= data.get("idLandlot");
-        actions.forEach((a) -> {
-            a.setIdLandlot(idLandlot);
-            a.execute();
-        });
+        double answer= model.predict(v);
+        
+        if (answer==1.0){
+            System.out.println("El modelo predijo que hay riesgo de la enfermadad X");
+            String idLandlot= data.get("idLandlot");
+            actions.forEach((a) -> {
+                a.setIdLandlot(idLandlot);
+                a.execute();
+            });
+        }
+        
+        
     }
 
 
