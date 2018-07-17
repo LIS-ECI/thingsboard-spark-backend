@@ -8,6 +8,7 @@ package edu.eci.pgr.spark;
 import edu.eci.pgr.spark.rules.RuleTests2;
 import edu.eci.pgr.spark.rules.RuleDecisionTree;
 import edu.eci.pgr.spark.rules.GotaRule;
+import edu.eci.pgr.spark.rules.*;
 import edu.eci.pgr.spark.rules.Rule;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ public class RulesEngine implements Serializable{
         rules.add(new GotaRule());
         rules.add(new RuleDecisionTree());
         rules.add(new RuleTests2());
+        rules.add(new RuleTestTutorial());
     }
     
 

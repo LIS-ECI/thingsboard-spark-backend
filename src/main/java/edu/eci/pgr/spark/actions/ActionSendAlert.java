@@ -32,13 +32,7 @@ import org.thingsboard.samples.spark.util.ExternalMethods;
 @Slf4j
 public class ActionSendAlert implements Action,Serializable {
 
-    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
-    private MqttAsyncClient client;
     private String idLandlot;
-
-    
-
-  
 
     @Override
     public void execute() {

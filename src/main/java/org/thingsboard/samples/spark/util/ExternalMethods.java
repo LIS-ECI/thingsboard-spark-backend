@@ -39,8 +39,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 public class ExternalMethods implements Serializable {
     
-    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.19:1883";
-    private static final String CASSANDRA_IP = "10.8.0.19";
+    private static final String THINGSBOARD_MQTT_ENDPOINT = "tcp://10.8.0.18:1883";
+    private static final String CASSANDRA_IP = "10.8.0.18";
     private static final String CASSANDRA_KEYSPACE = "thingsboard";
     private static CassandraConnector connector = new CassandraConnector();
     private static final MongoDBSpatial mdbs = new MongoDBSpatial();

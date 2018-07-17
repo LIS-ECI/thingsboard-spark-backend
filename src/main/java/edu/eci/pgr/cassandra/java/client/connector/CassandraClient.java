@@ -24,25 +24,25 @@ public class CassandraClient {
     //Example
     public static void main(String args[]) {
         CassandraConnector connector = new CassandraConnector();
-        connector.connect("10.8.0.19", null);
+        connector.connect("10.8.0.18", null);
         Session session = connector.getSession();
 
         KeyspaceRepository sr = new KeyspaceRepository(session);
         sr.useKeyspace("thingsboard");
         LandlotRepository fr= new LandlotRepository(session);
         
-        //Landlot f= fr.selectById("1ffce660-80af-11e8-9659-3fd35edd3cfd");   
-        //System.out.println("farm: "+f);
+        Landlot f= fr.selectById("f7229610-86e2-11e8-9de0-ad65f8aa88ad");   
+        System.out.println("landlot: "+f);
         connector.close();
         
-        MongoDBSpatial mdbs = new MongoDBSpatial();
-        String idLandlot;
-        try {
-            idLandlot = mdbs.findLandlotsByDeviceId("1ffce660-80af-11e8-9659-3fd35edd3cfd").getId();
-            System.out.println("idLand:" +idLandlot);
+        //MongoDBSpatial mdbs = new MongoDBSpatial();
+        //String idLandlot;
+        //try {
+        //    idLandlot = mdbs.findLandlotsByDeviceId("1ffce660-80af-11e8-9659-3fd35edd3cfd").getId();
+        //    System.out.println("idLand:" +idLandlot);
 
-        } catch (MongoDBException ex) {
-            java.util.logging.Logger.getLogger(CassandraClient.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        //} catch (MongoDBException ex) {
+        //    java.util.logging.Logger.getLogger(CassandraClient.class.getName()).log(Level.SEVERE, null, ex);
+        //}
     }
 }
