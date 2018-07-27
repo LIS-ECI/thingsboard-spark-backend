@@ -8,8 +8,11 @@ Also the rules can execute models of Spark MlLib, like decision tree.
 **Local Mode Instructions:**
 
 Uncomment in all the main classes (SparkKafkaStreamingTemperatureMain,SparkKafkaStreamingLightMain,SparkKafkaStreamingHumidityMain)
+
 *SparkConf conf = new SparkConf().setAppName(APP_NAME); //.setMaster("local");*
+
 Must be
+
 *SparkConf conf = new SparkConf().setAppName(APP_NAME).setMaster("local");*
 
 the next instructions were made for being executed in a local way, it makes more easy the development and deployment in a test enviroment, if you want a cluster mode instructions, that gonna be depending of the implementation of the cluster.
@@ -22,14 +25,17 @@ In this case we need a serie of prerequisites, the most important of all a serie
 
 Once it have been compile sucessfully, go to the target folder and there you can find 3 .jar files
 if you want to execute the example of "late blight" (Phytophthora infestans) you have to run the next jar files:
+
   Spark-Light-KafkaStreaming.jar
   Spark-Temperature-KafkaStreaming.jar
   Spark-Humidity-KafkaStreaming.jar
   
 2. execute in three terminals:
+
 *java -jar Spark-Light-KafkaStreaming.jar 
 java -jar Spark-Humidity-KafkaStreaming.jar 
 java -jar Spark-Temperature-KafkaStreaming.jar*
+
 respectively
 
  **Cluster Mode**
